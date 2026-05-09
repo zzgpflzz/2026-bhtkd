@@ -2,96 +2,51 @@
 
 import type { Student, Exam } from "./types";
 
-const STUDENTS_KEY = "baekho-students-v2";
-const EXAMS_KEY = "baekho-exams-v2";
+let studentsCache: Student[] = [];
+let examsCache: Exam[] = [];
 
-// 초기 시드 데이터
-const seedStudents: Student[] = [
-  {
-    id: "stu_001",
-    name: "김도현",
-    birthDate: "2015-04-12",
-    photoUrl: "",
-    googleLink: "",
-  },
-  {
-    id: "stu_002",
-    name: "박서연",
-    birthDate: "2016-09-23",
-    photoUrl: "",
-    googleLink: "",
-  },
-];
-
-const seedExams: Exam[] = [
-  {
-    id: "exam_001",
-    studentId: "stu_001",
-    examDate: "2026-05-09",
-    currentGrade: "8급",
-    targetGrade: "7급",
-    basicSkills: { basics: 5, poomsae: 4, sparring: 5, breaking: 4 },
-    attitude: { concentration: 5, challenge: 5, greeting: 5, confidence: 4 },
-    lifeHabits: { uniform: 5, language: 5, organization: 4, rules: 5 },
-    comment: "기본동작이 매우 정확하고 자세가 안정적입니다. 발차기에 힘이 실려 있어 또래보다 한 걸음 앞선 모습이에요.",
-    passed: true,
-  },
-  {
-    id: "exam_002",
-    studentId: "stu_002",
-    examDate: "2026-05-09",
-    currentGrade: "9급",
-    targetGrade: "8급",
-    basicSkills: { basics: 4, poomsae: 5, sparring: 4, breaking: 4 },
-    attitude: { concentration: 5, challenge: 4, greeting: 5, confidence: 5 },
-    lifeHabits: { uniform: 5, language: 5, organization: 5, rules: 5 },
-    comment: "품새 동작의 흐름이 매끄럽고 박자 감각이 뛰어납니다. 친구들에게 양보하고 도와주는 모습이 인상 깊었어요.",
-    passed: true,
-  },
-];
-
-export function loadStudents(): Student[] {
-  if (typeof window === "undefined") return seedStudents;
+export async function loadStudents(): Promise<Student[]> {
   try {
-    const raw = localStorage.getItem(STUDENTS_KEY);
-    if (!raw) {
-      localStorage.setItem(STUDENTS_KEY, JSON.stringify(seedStudents));
-      return seedStudents;
-    }
-    const parsed = JSON.parse(raw) as Student[];
-    return Array.isArray(parsed) ? parsed : seedStudents;
+    const res = await fetch("/api/storage?type=students");
+    if (!res.ok) throw new Error("Failed to load students");
+    studentsCache = await res.json();
+    return studentsCache;
   } catch {
-    return seedStudents;
+    return studentsCache;
   }
 }
 
-export function saveStudents(students: Student[]): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STUDENTS_KEY, JSON.stringify(students));
+export async function saveStudents(students: Student[]): Promise<void> {
+  studentsCache = students;
+  await fetch("/api/storage", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "students", data: students }),
+  });
 }
 
-export function loadExams(): Exam[] {
-  if (typeof window === "undefined") return seedExams;
+export async function loadExams(): Promise<Exam[]> {
   try {
-    const raw = localStorage.getItem(EXAMS_KEY);
-    if (!raw) {
-      localStorage.setItem(EXAMS_KEY, JSON.stringify(seedExams));
-      return seedExams;
-    }
-    const parsed = JSON.parse(raw) as Exam[];
-    return Array.isArray(parsed) ? parsed : seedExams;
+    const res = await fetch("/api/storage?type=exams");
+    if (!res.ok) throw new Error("Failed to load exams");
+    examsCache = await res.json();
+    return examsCache;
   } catch {
-    return seedExams;
+    return examsCache;
   }
 }
 
-export function saveExams(exams: Exam[]): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(EXAMS_KEY, JSON.stringify(exams));
+export async function saveExams(exams: Exam[]): Promise<void> {
+  examsCache = exams;
+  await fetch("/api/storage", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "exams", data: exams }),
+  });
 }
 
-export function findStudent(name: string, birthDate: string): Student | null {
-  const students = loadStudents();
+export async function findStudent(name: string, birthDate: string): Promise<Student | null> {
+  const students = await loadStudents();
   const trimmed = name.trim();
   return (
     students.find(
@@ -100,42 +55,42 @@ export function findStudent(name: string, birthDate: string): Student | null {
   );
 }
 
-export function getStudentExams(studentId: string): Exam[] {
-  return loadExams()
+export async function getStudentExams(studentId: string): Promise<Exam[]> {
+  const exams = await loadExams();
+  return exams
     .filter((e) => e.studentId === studentId)
     .sort((a, b) => b.examDate.localeCompare(a.examDate));
 }
 
-export function upsertStudent(student: Student): Student[] {
-  const list = loadStudents();
+export async function upsertStudent(student: Student): Promise<Student[]> {
+  const list = await loadStudents();
   const idx = list.findIndex((s) => s.id === student.id);
   if (idx >= 0) list[idx] = student;
   else list.push(student);
-  saveStudents(list);
+  await saveStudents(list);
   return list;
 }
 
-export function deleteStudent(id: string): Student[] {
-  const list = loadStudents().filter((s) => s.id !== id);
-  saveStudents(list);
-  // 해당 학생의 심사 기록도 삭제
-  const exams = loadExams().filter((e) => e.studentId !== id);
-  saveExams(exams);
+export async function deleteStudent(id: string): Promise<Student[]> {
+  const list = (await loadStudents()).filter((s) => s.id !== id);
+  await saveStudents(list);
+  const exams = (await loadExams()).filter((e) => e.studentId !== id);
+  await saveExams(exams);
   return list;
 }
 
-export function upsertExam(exam: Exam): Exam[] {
-  const list = loadExams();
+export async function upsertExam(exam: Exam): Promise<Exam[]> {
+  const list = await loadExams();
   const idx = list.findIndex((e) => e.id === exam.id);
   if (idx >= 0) list[idx] = exam;
   else list.push(exam);
-  saveExams(list);
+  await saveExams(list);
   return list;
 }
 
-export function deleteExam(id: string): Exam[] {
-  const list = loadExams().filter((e) => e.id !== id);
-  saveExams(list);
+export async function deleteExam(id: string): Promise<Exam[]> {
+  const list = (await loadExams()).filter((e) => e.id !== id);
+  await saveExams(list);
   return list;
 }
 

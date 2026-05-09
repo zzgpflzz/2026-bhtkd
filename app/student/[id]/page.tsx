@@ -49,14 +49,16 @@ export default function StudentResultPage() {
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const list = loadStudents();
-    const s = list.find((x) => x.id === params.id) ?? null;
-    setStudent(s);
+    (async () => {
+      const list = await loadStudents();
+      const s = list.find((x) => x.id === params.id) ?? null;
+      setStudent(s);
 
-    if (s) {
-      const examList = getStudentExams(s.id);
-      setExams(examList);
-    }
+      if (s) {
+        const examList = await getStudentExams(s.id);
+        setExams(examList);
+      }
+    })();
   }, [params.id]);
 
   const handleDownload = async () => {

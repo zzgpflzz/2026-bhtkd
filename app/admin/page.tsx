@@ -43,7 +43,10 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (authed) {
-      setStudents(loadStudents());
+      (async () => {
+        const list = await loadStudents();
+        setStudents(list);
+      })();
     }
   }, [authed]);
 
@@ -61,8 +64,8 @@ export default function AdminPage() {
     s.name.toLowerCase().includes(search.toLowerCase().trim()),
   );
 
-  const handleSaveStudent = (s: Student) => {
-    const list = upsertStudent(s);
+  const handleSaveStudent = async (s: Student) => {
+    const list = await upsertStudent(s);
     setStudents(list);
     setEditingStudent(null);
     if (selectedStudent?.id === s.id) {
@@ -70,22 +73,23 @@ export default function AdminPage() {
     }
   };
 
-  const handleDeleteStudent = (id: string) => {
+  const handleDeleteStudent = async (id: string) => {
     if (!confirm("정말 삭제하시겠습니까? 모든 심사 기록도 함께 삭제됩니다.")) return;
-    setStudents(deleteStudent(id));
+    const list = await deleteStudent(id);
+    setStudents(list);
     if (selectedStudent?.id === id) {
       setSelectedStudent(null);
     }
   };
 
-  const handleSaveExam = (e: Exam) => {
-    upsertExam(e);
+  const handleSaveExam = async (e: Exam) => {
+    await upsertExam(e);
     setEditingExam(null);
   };
 
-  const handleDeleteExam = (id: string) => {
+  const handleDeleteExam = async (id: string) => {
     if (!confirm("이 심사 기록을 삭제하시겠습니까?")) return;
-    deleteExam(id);
+    await deleteExam(id);
     setEditingExam(null);
   };
 
@@ -272,12 +276,19 @@ function StudentDetail({
 }: {
   student: Student;
   onEditStudent: () => void;
-  onDeleteStudent: (id: string) => void;
+  onDeleteStudent: (id: string) => Promise<void>;
   onAddExam: () => void;
   onEditExam: (exam: Exam) => void;
-  onDeleteExam: (id: string) => void;
+  onDeleteExam: (id: string) => Promise<void>;
 }) {
-  const exams = getStudentExams(student.id);
+  const [exams, setExams] = useState<Exam[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const list = await getStudentExams(student.id);
+      setExams(list);
+    })();
+  }, [student.id]);
 
   return (
     <div className="space-y-4">
@@ -425,7 +436,7 @@ function StudentEditModal({
 }: {
   student: Student;
   onClose: () => void;
-  onSave: (s: Student) => void;
+  onSave: (s: Student) => Promise<void>;
 }) {
   const [form, setForm] = useState<Student>(student);
 
@@ -440,13 +451,13 @@ function StudentEditModal({
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.birthDate) {
       alert("이름과 생년월일은 필수 항목입니다.");
       return;
     }
-    onSave(form);
+    await onSave(form);
   };
 
   return (
@@ -606,17 +617,17 @@ function ExamEditModal({
 }: {
   exam: Exam;
   onClose: () => void;
-  onSave: (e: Exam) => void;
-  onDelete: () => void;
+  onSave: (e: Exam) => Promise<void>;
+  onDelete: () => Promise<void>;
 }) {
   const [form, setForm] = useState<Exam>(exam);
 
   const update = <K extends keyof Exam>(key: K, value: Exam[K]) =>
     setForm((p) => ({ ...p, [key]: value }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(form);
+    await onSave(form);
   };
 
   return (
