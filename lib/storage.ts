@@ -9,10 +9,11 @@ export async function loadStudents(): Promise<Student[]> {
   try {
     const res = await fetch("/api/storage?type=students");
     if (!res.ok) throw new Error("Failed to load students");
-    studentsCache = await res.json();
+    const data = await res.json();
+    studentsCache = Array.isArray(data) ? data : [];
     return studentsCache;
   } catch {
-    return studentsCache;
+    return studentsCache.length > 0 ? studentsCache : [];
   }
 }
 
@@ -29,10 +30,11 @@ export async function loadExams(): Promise<Exam[]> {
   try {
     const res = await fetch("/api/storage?type=exams");
     if (!res.ok) throw new Error("Failed to load exams");
-    examsCache = await res.json();
+    const data = await res.json();
+    examsCache = Array.isArray(data) ? data : [];
     return examsCache;
   } catch {
-    return examsCache;
+    return examsCache.length > 0 ? examsCache : [];
   }
 }
 
