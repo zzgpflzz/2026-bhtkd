@@ -9,17 +9,17 @@ import { loadStudents, getStudentExams } from "../../../lib/storage";
 import { RATING_GUIDE } from "../../../lib/types";
 import type { Student, Exam } from "../../../lib/types";
 
-// 성을 제외한 이름 추출 함수
-function getFirstName(fullName: string): string {
-  if (!fullName) return fullName;
-  return fullName.length > 1 ? fullName.slice(1) : fullName;
-}
-
 // 한국어 조사 처리 함수
-function getNameWithJosa(fullName: string): string {
+function getNameWithJosa(fullName: string, isEnglishName?: boolean): string {
   if (!fullName) return fullName;
 
-  const firstName = getFirstName(fullName);
+  // 영어 이름인 경우 성을 제거하지 않고 풀네임에 '의' 붙임
+  if (isEnglishName) {
+    return `${fullName}의`;
+  }
+
+  // 한국어 이름인 경우 성 제외한 이름만 사용
+  const firstName = fullName.length > 1 ? fullName.slice(1) : fullName;
   if (!firstName) return fullName;
 
   const lastChar = firstName[firstName.length - 1];
@@ -29,11 +29,11 @@ function getNameWithJosa(fullName: string): string {
   if (charCode >= 0xAC00 && charCode <= 0xD7A3) {
     // 받침이 있는지 확인: (charCode - 0xAC00) % 28 !== 0
     const hasFinalConsonant = (charCode - 0xAC00) % 28 !== 0;
-    return hasFinalConsonant ? `${firstName}이` : `${firstName}`;
+    return hasFinalConsonant ? `${firstName}이의` : `${firstName}의`;
   }
 
-  // 한글이 아닌 경우 기본값
-  return firstName;
+  // 한글이 아닌 경우 기본값 (영어 이름이지만 체크박스 안 한 경우)
+  return `${firstName}의`;
 }
 
 export default function StudentResultPage() {
@@ -103,7 +103,7 @@ export default function StudentResultPage() {
     );
   }
 
-  const displayName = getNameWithJosa(student.name);
+  const displayName = getNameWithJosa(student.name, student.isEnglishName);
 
   return (
     <main className="min-h-screen bg-white text-ink">
@@ -142,14 +142,14 @@ export default function StudentResultPage() {
           {/* 오른쪽: 텍스트 정보 */}
           <div className="lg:col-span-7 text-left">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-ink leading-tight break-keep">
-              {displayName}의<br />성장을 기록합니다
+              {displayName}<br />성장을 기록합니다
             </h1>
 
             <p className="mt-6 text-base sm:text-lg text-ink-soft leading-relaxed break-keep">
               안녕하세요 😊<br />
-              {displayName}의 성장 과정을 기록한<br />
+              {displayName} 성장 과정을 기록한<br />
               심사 영상을 확인하실 수 있는 공간입니다.<br />
-              {displayName}의 변화와 발전 모습을<br />
+              {displayName} 변화와 발전 모습을<br />
               지속적으로 업로드하고 있습니다.
             </p>
 
@@ -250,9 +250,6 @@ export default function StudentResultPage() {
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs text-muted mb-1">
-                            {exam.examDate}
-                          </div>
                           <h3 className="text-xl font-semibold text-ink">
                             {student.name}
                           </h3>

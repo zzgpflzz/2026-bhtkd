@@ -52,6 +52,7 @@ export interface Student {
   birthDate: string;       // YYYY-MM-DD (로그인 비밀번호 역할)
   photoUrl?: string;       // 학생 사진 (URL 또는 dataURL)
   googleLink?: string;     // 구글 리포트 링크
+  isEnglishName?: boolean; // 영어 이름 여부 (true면 성 제거 안함)
 }
 
 export const GRADES: Grade[] = [

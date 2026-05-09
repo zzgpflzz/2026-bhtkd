@@ -24,6 +24,7 @@ export default function HomePage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showBeltModal, setShowBeltModal] = useState(false);
+  const [showPoomModal, setShowPoomModal] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,12 +99,20 @@ export default function HomePage() {
               한국체육대학교 백호태권도 & 점프윙스
             </div>
 
-            <button
-              onClick={() => setShowBeltModal(true)}
-              className="mt-3 inline-flex items-center gap-2 text-sm text-ink-soft hover:text-ink border border-line hover:border-ink px-4 py-2 transition"
-            >
-              심사(띠) 체계 보기
-            </button>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                onClick={() => setShowBeltModal(true)}
+                className="inline-flex items-center gap-2 text-sm text-ink-soft hover:text-ink border border-line hover:border-ink px-4 py-2 transition"
+              >
+                유급자 띠 체계 보기
+              </button>
+              <button
+                onClick={() => setShowPoomModal(true)}
+                className="inline-flex items-center gap-2 text-sm text-ink-soft hover:text-ink border border-line hover:border-ink px-4 py-2 transition"
+              >
+                유품자 급수 과정 보기
+              </button>
+            </div>
           </div>
 
           {/* 우측 — 로그인 박스 (보더 only) */}
@@ -187,7 +196,7 @@ export default function HomePage() {
         </div>
       </footer>
 
-      {/* ───────────── 띠 체계 모달 ───────────── */}
+      {/* ───────────── 유급자 띠 체계 모달 ───────────── */}
       {showBeltModal && (
         <div
           className="fixed inset-0 bg-ink/40 z-50 flex items-center justify-center p-4"
@@ -199,7 +208,7 @@ export default function HomePage() {
           >
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-base sm:text-lg font-semibold text-[#1A1A1A]">
-                백호태권도 급수별 띠 체계
+                유급자 띠 체계
               </h3>
               <button
                 onClick={() => setShowBeltModal(false)}
@@ -254,21 +263,70 @@ export default function HomePage() {
               ))}
             </div>
 
-            <div className="mt-6 pt-5 border-t border-[#DCDEE0]">
-              <div className="bg-[#F8F9FA] p-3 sm:p-4 rounded-sm">
-                <div className="text-[11px] sm:text-xs font-medium text-[#1A1A1A] mb-1.5 sm:mb-2">
-                  품 승급 안내
+            <div className="mt-4 text-[10px] sm:text-xs text-[#6B7280] text-center">
+              각 급수마다 심사를 통해 다음 단계로 승급합니다.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ───────────── 유품자 급수 과정 모달 ───────────── */}
+      {showPoomModal && (
+        <div
+          className="fixed inset-0 bg-ink/40 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowPoomModal(false)}
+        >
+          <div
+            className="bg-white border border-[#DCDEE0] max-w-2xl w-full p-5 sm:p-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-base sm:text-lg font-semibold text-[#1A1A1A]">
+                유품자 급수 과정
+              </h3>
+              <button
+                onClick={() => setShowPoomModal(false)}
+                className="p-1.5 hover:bg-[#F8F9FA] transition"
+                aria-label="닫기"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-[#F8F9FA] p-4 sm:p-5 rounded-sm">
+                <div className="text-sm sm:text-base font-semibold text-[#1A1A1A] mb-3">
+                  1품 과정
                 </div>
-                <div className="text-[10px] sm:text-xs text-[#6B7280] space-y-0.5 sm:space-y-1">
-                  <div>• 1품 - 12급까지</div>
-                  <div>• 2품 - 24급까지</div>
-                  <div>• 3품 - 36급까지</div>
+                <div className="text-xs sm:text-sm text-[#6B7280] leading-relaxed">
+                  • 12급까지 심사 진행<br />
+                  • 총 12회의 심사를 통해 품새, 기본기, 발차기 기술 습득
+                </div>
+              </div>
+
+              <div className="bg-[#F8F9FA] p-4 sm:p-5 rounded-sm">
+                <div className="text-sm sm:text-base font-semibold text-[#1A1A1A] mb-3">
+                  2품 과정
+                </div>
+                <div className="text-xs sm:text-sm text-[#6B7280] leading-relaxed">
+                  • 24급까지 심사 진행<br />
+                  • 중급 품새와 겨루기 기술 심화 학습
+                </div>
+              </div>
+
+              <div className="bg-[#F8F9FA] p-4 sm:p-5 rounded-sm">
+                <div className="text-sm sm:text-base font-semibold text-[#1A1A1A] mb-3">
+                  3품 과정
+                </div>
+                <div className="text-xs sm:text-sm text-[#6B7280] leading-relaxed">
+                  • 36급까지 심사 진행<br />
+                  • 고급 품새와 격파 기술 완성
                 </div>
               </div>
             </div>
 
-            <div className="mt-3 text-[10px] sm:text-xs text-[#6B7280] text-center">
-              각 급수마다 심사를 통해 다음 단계로 승급합니다.
+            <div className="mt-5 pt-4 border-t border-[#DCDEE0] text-[10px] sm:text-xs text-[#6B7280] text-center">
+              각 품 과정은 연령과 실력에 따라 진행됩니다.
             </div>
           </div>
         </div>

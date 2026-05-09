@@ -482,10 +482,35 @@ function StudentEditModal({
                 type="text"
                 inputMode="numeric"
                 value={form.birthDate}
-                onChange={(e) => update("birthDate", e.target.value)}
+                onChange={(e) => {
+                  const inputValue = e.target.value;
+                  // 하이픈을 제거한 숫자만 추출하여 8자리로 제한
+                  const digitsOnly = inputValue.replace(/\D/g, "").slice(0, 8);
+
+                  // 8자리가 되면 YYYY-MM-DD 형식으로 변환하여 저장
+                  if (digitsOnly.length === 8) {
+                    const formatted = `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(4, 6)}-${digitsOnly.slice(6, 8)}`;
+                    update("birthDate", formatted);
+                  } else if (inputValue.includes('-') && /^\d{4}-\d{2}-\d{2}$/.test(inputValue)) {
+                    // 이미 YYYY-MM-DD 형식인 경우 그대로 사용
+                    update("birthDate", inputValue);
+                  } else {
+                    // 입력 중인 경우 원본 그대로 저장
+                    update("birthDate", inputValue);
+                  }
+                }}
+                onBlur={(e) => {
+                  // 포커스를 잃을 때 하이픈 제거 후 재포맷
+                  const digitsOnly = e.target.value.replace(/\D/g, "");
+                  if (digitsOnly.length === 8) {
+                    const formatted = `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(4, 6)}-${digitsOnly.slice(6, 8)}`;
+                    update("birthDate", formatted);
+                  }
+                }}
                 className="form-input"
-                placeholder="2015-04-12"
+                placeholder="2015-04-12 또는 20150412"
               />
+              <p className="text-xs text-muted mt-1.5">하이픈 제거된 8자리 숫자가 기본 비밀번호로 사용됩니다</p>
             </Field>
           </div>
 
@@ -534,6 +559,20 @@ function StudentEditModal({
               placeholder="https://drive.google.com/..."
             />
           </Field>
+
+          <div className="pt-3 border-t border-line">
+            <label className="inline-flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.isEnglishName || false}
+                onChange={(e) => update("isEnglishName", e.target.checked)}
+                className="w-4 h-4 accent-[#FF0044]"
+              />
+              <span className="text-sm text-ink-soft">
+                영어 이름 (체크 시 성을 제거하지 않고 풀네임에 '의'를 붙입니다)
+              </span>
+            </label>
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 justify-end mt-6">
@@ -601,13 +640,14 @@ function ExamEditModal({
         {/* 기본 정보 */}
         <Section title="기본 정보">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Field label="심사 일자">
+            <Field label="심사 월 (YYYY-MM)">
               <input
-                type="date"
-                value={form.examDate}
-                onChange={(e) => update("examDate", e.target.value)}
+                type="month"
+                value={form.examDate.slice(0, 7)}
+                onChange={(e) => update("examDate", `${e.target.value}-01`)}
                 className="form-input"
               />
+              <p className="text-xs text-muted mt-1.5">월 단위로만 선택됩니다</p>
             </Field>
             <Field label="현재 급수">
               <select
