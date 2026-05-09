@@ -175,40 +175,48 @@ export default function AdminPage() {
                 />
               </div>
               <div className="max-h-[calc(100vh-280px)] overflow-y-auto">
-                {filtered.map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => setSelectedStudent(s)}
-                    className={`w-full p-4 border-b border-line last:border-b-0 text-left hover:bg-line-soft transition ${
-                      selectedStudent?.id === s.id ? "bg-line-soft" : ""
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 border border-line overflow-hidden flex items-center justify-center shrink-0">
-                        {s.photoUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={s.photoUrl}
-                            alt={s.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <ImageIcon
-                            size={16}
-                            strokeWidth={1.5}
-                            className="text-line"
-                          />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-ink text-sm">
-                          {s.name}
+                {filtered.length === 0 ? (
+                  <div className="p-8 text-center text-muted text-sm">
+                    {students.length === 0
+                      ? "아직 등록된 학생이 없습니다. 새 학생을 추가해주세요."
+                      : "검색 결과가 없습니다."}
+                  </div>
+                ) : (
+                  filtered.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => setSelectedStudent(s)}
+                      className={`w-full p-4 border-b border-line last:border-b-0 text-left hover:bg-line-soft transition ${
+                        selectedStudent?.id === s.id ? "bg-line-soft" : ""
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 border border-line overflow-hidden flex items-center justify-center shrink-0">
+                          {s.photoUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={s.photoUrl}
+                              alt={s.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <ImageIcon
+                              size={16}
+                              strokeWidth={1.5}
+                              className="text-line"
+                            />
+                          )}
                         </div>
-                        <div className="text-xs text-muted">{s.birthDate}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-ink text-sm">
+                            {s.name}
+                          </div>
+                          <div className="text-xs text-muted">{s.birthDate}</div>
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  ))
+                )}
               </div>
             </div>
             <button

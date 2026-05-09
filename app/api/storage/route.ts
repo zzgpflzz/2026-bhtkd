@@ -69,48 +69,8 @@ async function writeDataLocally(data: StorageData): Promise<void> {
 
 function getDefaultData(): StorageData {
   return {
-    students: [
-      {
-        id: "stu_001",
-        name: "김도현",
-        birthDate: "2015-04-12",
-        photoUrl: "",
-        googleLink: "",
-      },
-      {
-        id: "stu_002",
-        name: "박서연",
-        birthDate: "2016-09-23",
-        photoUrl: "",
-        googleLink: "",
-      },
-    ],
-    exams: [
-      {
-        id: "exam_001",
-        studentId: "stu_001",
-        examDate: "2026-05-09",
-        currentGrade: "8급",
-        targetGrade: "7급",
-        basicSkills: { basics: 5, poomsae: 4, sparring: 5, breaking: 4 },
-        attitude: { concentration: 5, challenge: 5, greeting: 5, confidence: 4 },
-        lifeHabits: { uniform: 5, language: 5, organization: 4, rules: 5 },
-        comment: "기본동작이 매우 정확하고 자세가 안정적입니다. 발차기에 힘이 실려 있어 또래보다 한 걸음 앞선 모습이에요.",
-        passed: true,
-      },
-      {
-        id: "exam_002",
-        studentId: "stu_002",
-        examDate: "2026-05-09",
-        currentGrade: "9급",
-        targetGrade: "8급",
-        basicSkills: { basics: 4, poomsae: 5, sparring: 4, breaking: 4 },
-        attitude: { concentration: 5, challenge: 4, greeting: 5, confidence: 5 },
-        lifeHabits: { uniform: 5, language: 5, organization: 5, rules: 5 },
-        comment: "품새 동작의 흐름이 매끄럽고 박자 감각이 뛰어납니다. 친구들에게 양보하고 도와주는 모습이 인상 깊었어요.",
-        passed: true,
-      },
-    ],
+    students: [],
+    exams: [],
   };
 }
 
