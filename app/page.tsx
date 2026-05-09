@@ -1,0 +1,307 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, X } from "lucide-react";
+import { findStudent } from "../lib/storage";
+
+const BELT_SYSTEM = [
+  { grade: "9급", name: "흰띠", color: "bg-white border-2 border-gray-300" },
+  { grade: "8급", name: "노란띠", color: "bg-yellow-400" },
+  { grade: "7급", name: "초록띠", color: "bg-green-500" },
+  { grade: "6급", name: "파란띠", color: "bg-blue-500" },
+  { grade: "5급", name: "밤띠", color: "bg-[#8B4513]" },
+  { grade: "4급", name: "보라띠", color: "bg-purple-600" },
+  { grade: "3급", name: "주황띠", color: "bg-orange-500" },
+  { grade: "2급", name: "빨강띠", color: "bg-red-600" },
+  { grade: "1급", name: "빨강띠", color: "bg-red-600" },
+];
+
+export default function HomePage() {
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showBeltModal, setShowBeltModal] = useState(false);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    if (!name.trim() || !birthDate) {
+      setError("이름과 생년월일을 모두 입력해 주세요.");
+      setLoading(false);
+      return;
+    }
+
+    if (!/^\d{8}$/.test(birthDate)) {
+      setError("생년월일은 20150412 형식의 8자리 숫자로 입력해 주세요.");
+      setLoading(false);
+      return;
+    }
+
+    // 20150412 → 2015-04-12 (저장된 데이터 포맷과 일치)
+    const formatted = `${birthDate.slice(0, 4)}-${birthDate.slice(4, 6)}-${birthDate.slice(6, 8)}`;
+
+    const student = findStudent(name, formatted);
+    if (!student) {
+      setError("일치하는 학생 정보가 없습니다. 도장에 문의해 주세요.");
+      setLoading(false);
+      return;
+    }
+
+    sessionStorage.setItem("baekho-current-student", student.id);
+    router.push(`/student/${student.id}`);
+  };
+
+  return (
+    <main className="min-h-screen bg-paper text-ink">
+      {/* ───────────── Top bar ───────────── */}
+      <header className="border-b border-line">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8 py-4 flex items-center justify-between">
+          <span className="text-sm font-semibold text-ink">
+            BAEKHO TAEKWONDO
+          </span>
+          <a
+            href="/admin"
+            className="text-xs text-muted hover:text-ink transition"
+          >
+            관리자
+          </a>
+        </div>
+      </header>
+
+      {/* ───────────── Hero ───────────── */}
+      <section className="max-w-6xl mx-auto px-6 lg:px-8 pt-10 sm:pt-16 lg:pt-20 pb-12 sm:pb-16 lg:pb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16">
+          {/* 좌측 — 타이포 */}
+          <div className="lg:col-span-7">
+            <img
+              src="/bhlogo.svg"
+              alt="백호태권도 로고"
+              className="w-[110px] mb-4"
+            />
+
+            <h1 className="text-ink leading-[1.0] font-semibold text-5xl sm:text-6xl lg:text-[5.5rem]">
+              백호태권도
+            </h1>
+
+            <p className="mt-5 text-base sm:text-lg text-ink-soft max-w-md leading-relaxed">
+              우리 아이의 한 걸음, 한 동작이 모여
+              <br />
+              단단한 성장의 기록이 됩니다.
+            </p>
+
+            <div className="mt-4 text-sm text-ink-soft">
+              한국체육대학교 백호태권도 & 점프윙스
+            </div>
+
+            <button
+              onClick={() => setShowBeltModal(true)}
+              className="mt-3 inline-flex items-center gap-2 text-sm text-ink-soft hover:text-ink border border-line hover:border-ink px-4 py-2 transition"
+            >
+              심사(띠) 체계 보기
+            </button>
+          </div>
+
+          {/* 우측 — 로그인 박스 (보더 only) */}
+          <div className="lg:col-span-5 lg:pt-12">
+            <div className="border border-line p-6 sm:p-7">
+              <h2 className="text-xl font-semibold text-ink">결과 조회</h2>
+              <p className="text-sm text-muted mt-1">학부모 로그인</p>
+
+              <form onSubmit={handleLogin} className="mt-6 space-y-4">
+                <Field label="학생 이름">
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="홍길동"
+                    className="form-input"
+                  />
+                </Field>
+
+                <Field label="생년월일 8자리">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={birthDate}
+                    onChange={(e) =>
+                      setBirthDate(
+                        e.target.value.replace(/\D/g, "").slice(0, 8),
+                      )
+                    }
+                    maxLength={8}
+                    placeholder="예) 20150412"
+                    className="form-input tracking-wider"
+                  />
+                  <p className="text-xs text-muted mt-2">
+                    숫자 8자리를 비밀번호처럼 입력해 주세요.
+                  </p>
+                </Field>
+
+                {error && (
+                  <div className="text-xs text-point border border-point/40 px-3 py-2.5">
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-point hover:bg-point-dark transition text-white font-semibold py-3.5 inline-flex items-center justify-center gap-2 text-sm disabled:opacity-60"
+                >
+                  {loading ? "조회 중..." : "조회하기"}
+                  <ArrowRight size={16} />
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ───────────── Feature strip ───────────── */}
+      <section className="border-t border-line">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8 py-12 sm:py-14 grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-0">
+          <Feature
+            t="투명한 심사"
+            b="기본동작 · 품새 · 발차기 · 태도. 4개 영역을 별점으로 명확하게 공개합니다."
+          />
+          <Feature
+            t="성장 레포트"
+            b="심사 결과를 성장 레포트로 확인하고, 다운로드 하세요."
+          />
+          <Feature
+            t="성장의 기록"
+            b="매 심사마다 누적되는 코멘트로 우리 아이의 변화를 살펴봅니다."
+          />
+        </div>
+      </section>
+
+      {/* ───────────── Footer ───────────── */}
+      <footer className="border-t border-line">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8 py-5 text-xs text-muted">
+          © 2026 BAEKHO TAEKWONDO · KOREA NATIONAL SPORT UNIVERSITY
+        </div>
+      </footer>
+
+      {/* ───────────── 띠 체계 모달 ───────────── */}
+      {showBeltModal && (
+        <div
+          className="fixed inset-0 bg-ink/40 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowBeltModal(false)}
+        >
+          <div
+            className="bg-white border border-[#DCDEE0] max-w-3xl w-full p-5 sm:p-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-base sm:text-lg font-semibold text-[#1A1A1A]">
+                백호태권도 급수별 띠 체계
+              </h3>
+              <button
+                onClick={() => setShowBeltModal(false)}
+                className="p-1.5 hover:bg-[#F8F9FA] transition"
+                aria-label="닫기"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* PC: 가로 한 줄 */}
+            <div className="hidden sm:flex justify-center items-end gap-3 overflow-x-auto pb-2">
+              {BELT_SYSTEM.map((belt) => (
+                <div
+                  key={belt.grade}
+                  className="flex flex-col items-center gap-2 shrink-0"
+                >
+                  <div
+                    className={`w-12 h-12 rounded-full ${belt.color} shadow-sm`}
+                  />
+                  <div className="text-center">
+                    <div className="text-[11px] font-semibold text-[#1A1A1A] whitespace-nowrap">
+                      {belt.grade}
+                    </div>
+                    <div className="text-[10px] text-[#6B7280] mt-0.5 whitespace-nowrap">
+                      {belt.name}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* 모바일: 3열 그리드 (컴팩트) */}
+            <div className="sm:hidden grid grid-cols-3 gap-3">
+              {BELT_SYSTEM.map((belt) => (
+                <div
+                  key={belt.grade}
+                  className="flex flex-col items-center gap-1.5 p-2 border border-[#DCDEE0] hover:bg-[#F8F9FA] transition"
+                >
+                  <div
+                    className={`w-10 h-10 rounded-full ${belt.color} shadow-sm`}
+                  />
+                  <div className="text-center">
+                    <div className="text-[10px] font-semibold text-[#1A1A1A]">
+                      {belt.grade}
+                    </div>
+                    <div className="text-[9px] text-[#6B7280] mt-0.5">
+                      {belt.name}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 pt-5 border-t border-[#DCDEE0]">
+              <div className="bg-[#F8F9FA] p-3 sm:p-4 rounded-sm">
+                <div className="text-[11px] sm:text-xs font-medium text-[#1A1A1A] mb-1.5 sm:mb-2">
+                  품 승급 안내
+                </div>
+                <div className="text-[10px] sm:text-xs text-[#6B7280] space-y-0.5 sm:space-y-1">
+                  <div>• 1품 - 12급까지</div>
+                  <div>• 2품 - 24급까지</div>
+                  <div>• 3품 - 36급까지</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-3 text-[10px] sm:text-xs text-[#6B7280] text-center">
+              각 급수마다 심사를 통해 다음 단계로 승급합니다.
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
+  );
+}
+
+// ─────────────────────────────────────────────
+// 보조 컴포넌트
+// ─────────────────────────────────────────────
+function Feature({ t, b }: { t: string; b: string }) {
+  return (
+    <div className="md:px-8 first:md:pl-0 last:md:pr-0 md:border-r md:border-line last:md:border-r-0">
+      <h3 className="font-semibold text-ink text-base">{t}</h3>
+      <p className="text-sm text-ink-soft leading-relaxed mt-2">{b}</p>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="block text-xs font-medium text-ink-soft mb-2">
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
