@@ -65,8 +65,8 @@ export default function AdminPage() {
   );
 
   const handleSaveStudent = async (s: Student) => {
-    const list = await upsertStudent(s);
-    setStudents(list);
+    const updatedList = await upsertStudent(s);
+    setStudents(Array.isArray(updatedList) ? updatedList : []);
     setEditingStudent(null);
     if (selectedStudent?.id === s.id) {
       setSelectedStudent(s);
@@ -75,27 +75,25 @@ export default function AdminPage() {
 
   const handleDeleteStudent = async (id: string) => {
     if (!confirm("정말 삭제하시겠습니까? 모든 심사 기록도 함께 삭제됩니다.")) return;
-    const list = await deleteStudent(id);
-    setStudents(list);
+    const updatedList = await deleteStudent(id);
+    setStudents(Array.isArray(updatedList) ? updatedList : []);
     if (selectedStudent?.id === id) {
       setSelectedStudent(null);
     }
   };
 
   const handleSaveExam = async (e: Exam) => {
-    await upsertExam(e);
+    const updatedExams = await upsertExam(e);
     setEditingExam(null);
     // 선택된 학생의 심사 기록을 새로고침
     if (selectedStudent) {
-      const updatedExams = await getStudentExams(selectedStudent.id);
-      // StudentDetail 컴포넌트가 자동으로 재렌더링되도록 키를 변경
       setSelectedStudent({ ...selectedStudent });
     }
   };
 
   const handleDeleteExam = async (id: string) => {
     if (!confirm("이 심사 기록을 삭제하시겠습니까?")) return;
-    await deleteExam(id);
+    const updatedExams = await deleteExam(id);
     setEditingExam(null);
     // 선택된 학생의 심사 기록을 새로고침
     if (selectedStudent) {

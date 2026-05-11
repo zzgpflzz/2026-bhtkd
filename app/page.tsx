@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, X } from "lucide-react";
-import { findStudent } from "../lib/storage";
+import { findStudentByNameAndBirthDate } from "../lib/storage";
 
 const BELT_SYSTEM = [
   { grade: "9급", name: "흰띠", color: "bg-white border-2 border-gray-300" },
@@ -46,7 +46,7 @@ export default function HomePage() {
     // 20150412 → 2015-04-12 (저장된 데이터 포맷과 일치)
     const formatted = `${birthDate.slice(0, 4)}-${birthDate.slice(4, 6)}-${birthDate.slice(6, 8)}`;
 
-    const student = await findStudent(name, formatted);
+    const student = await findStudentByNameAndBirthDate(name, formatted);
     if (!student) {
       setError("일치하는 학생 정보가 없습니다. 도장에 문의해 주세요.");
       setLoading(false);
