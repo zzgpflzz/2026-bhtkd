@@ -1,6 +1,6 @@
 import { Student, Exam } from "@/lib/types";
 
-// 1. 데이터 불러오기 (전체)
+// 1. 데이터 불러오기
 export async function loadStudents(): Promise<Student[]> {
   try {
     const res = await fetch("/api/storage?type=students", {
@@ -23,63 +23,61 @@ export async function loadExams(): Promise<Exam[]> {
   }
 }
 
-// 2. 학생 추가/수정 (Upsert)
-export async function upsertStudent(student: Student) {
+// 2. 학생 추가/수정 (반환값: Student[])
+export async function upsertStudent(student: Student): Promise<Student[]> {
   const students = await loadStudents();
   const index = students.findIndex((s) => s.id === student.id);
-
   if (index >= 0) students[index] = student;
   else students.push(student);
 
-  const res = await fetch("/api/storage", {
+  await fetch("/api/storage", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ type: "students", data: students }),
   });
-  return res.ok;
+  return students;
 }
 
-// 3. 학생 삭제
-export async function deleteStudent(id: string) {
+// 3. 학생 삭제 (반환값: Student[])
+export async function deleteStudent(id: string): Promise<Student[]> {
   const students = await loadStudents();
   const updated = students.filter((s) => s.id !== id);
-  const res = await fetch("/api/storage", {
+  await fetch("/api/storage", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ type: "students", data: updated }),
   });
-  return res.ok;
+  return updated;
 }
 
-// 4. 심사 추가/수정 (Upsert)
-export async function upsertExam(exam: Exam) {
+// 4. 심사 추가/수정 (반환값: Exam[])
+export async function upsertExam(exam: Exam): Promise<Exam[]> {
   const exams = await loadExams();
   const index = exams.findIndex((e) => e.id === exam.id);
-
   if (index >= 0) exams[index] = exam;
   else exams.push(exam);
 
-  const res = await fetch("/api/storage", {
+  await fetch("/api/storage", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ type: "exams", data: exams }),
   });
-  return res.ok;
+  return exams;
 }
 
-// 5. 심사 삭제
-export async function deleteExam(id: string) {
+// 5. 심사 삭제 (반환값: Exam[])
+export async function deleteExam(id: string): Promise<Exam[]> {
   const exams = await loadExams();
   const updated = exams.filter((e) => e.id !== id);
-  const res = await fetch("/api/storage", {
+  await fetch("/api/storage", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ type: "exams", data: updated }),
   });
-  return res.ok;
+  return updated;
 }
 
-// 6. 기타 유틸리티 함수들 (에러 방지용)
+// 6. 유틸리티 함수
 export async function findStudent(id: string) {
   const students = await loadStudents();
   return students.find((s) => s.id === id) || null;
