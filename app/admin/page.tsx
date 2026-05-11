@@ -65,39 +65,114 @@ export default function AdminPage() {
   );
 
   const handleSaveStudent = async (s: Student) => {
-    const updatedList = await upsertStudent(s);
-    setStudents(Array.isArray(updatedList) ? updatedList : []);
-    setEditingStudent(null);
-    if (selectedStudent?.id === s.id) {
-      setSelectedStudent(s);
+    try {
+      console.log("🎯 [Admin Page] handleSaveStudent called for:", {
+        id: s.id,
+        name: s.name,
+      });
+
+      const updatedList = await upsertStudent(s);
+
+      console.log("📥 [Admin Page] Received updated list:", {
+        isArray: Array.isArray(updatedList),
+        length: updatedList?.length,
+      });
+
+      if (Array.isArray(updatedList)) {
+        setStudents(updatedList);
+        console.log("✅ [Admin Page] Students state updated with", updatedList.length, "items");
+      } else {
+        console.error("❌ [Admin Page] Updated list is not an array!");
+        setStudents([]);
+      }
+
+      setEditingStudent(null);
+      if (selectedStudent?.id === s.id) {
+        setSelectedStudent(s);
+      }
+
+      console.log("✅ [Admin Page] handleSaveStudent completed");
+    } catch (error) {
+      console.error("❌ [Admin Page] handleSaveStudent error:", error);
     }
   };
 
   const handleDeleteStudent = async (id: string) => {
     if (!confirm("정말 삭제하시겠습니까? 모든 심사 기록도 함께 삭제됩니다.")) return;
-    const updatedList = await deleteStudent(id);
-    setStudents(Array.isArray(updatedList) ? updatedList : []);
-    if (selectedStudent?.id === id) {
-      setSelectedStudent(null);
+
+    try {
+      console.log("🎯 [Admin Page] handleDeleteStudent called for ID:", id);
+
+      const updatedList = await deleteStudent(id);
+
+      console.log("📥 [Admin Page] Received updated list after delete:", {
+        isArray: Array.isArray(updatedList),
+        length: updatedList?.length,
+      });
+
+      if (Array.isArray(updatedList)) {
+        setStudents(updatedList);
+        console.log("✅ [Admin Page] Students state updated");
+      } else {
+        setStudents([]);
+      }
+
+      if (selectedStudent?.id === id) {
+        setSelectedStudent(null);
+      }
+    } catch (error) {
+      console.error("❌ [Admin Page] handleDeleteStudent error:", error);
     }
   };
 
   const handleSaveExam = async (e: Exam) => {
-    const updatedExams = await upsertExam(e);
-    setEditingExam(null);
-    // 선택된 학생의 심사 기록을 새로고침
-    if (selectedStudent) {
-      setSelectedStudent({ ...selectedStudent });
+    try {
+      console.log("🎯 [Admin Page] handleSaveExam called for:", {
+        id: e.id,
+        studentId: e.studentId,
+      });
+
+      const updatedExams = await upsertExam(e);
+
+      console.log("📥 [Admin Page] Received updated exams:", {
+        isArray: Array.isArray(updatedExams),
+        length: updatedExams?.length,
+      });
+
+      setEditingExam(null);
+      // 선택된 학생의 심사 기록을 새로고침
+      if (selectedStudent) {
+        setSelectedStudent({ ...selectedStudent });
+      }
+
+      console.log("✅ [Admin Page] handleSaveExam completed");
+    } catch (error) {
+      console.error("❌ [Admin Page] handleSaveExam error:", error);
     }
   };
 
   const handleDeleteExam = async (id: string) => {
     if (!confirm("이 심사 기록을 삭제하시겠습니까?")) return;
-    const updatedExams = await deleteExam(id);
-    setEditingExam(null);
-    // 선택된 학생의 심사 기록을 새로고침
-    if (selectedStudent) {
-      setSelectedStudent({ ...selectedStudent });
+
+    try {
+      console.log("🎯 [Admin Page] handleDeleteExam called for ID:", id);
+
+      const updatedExams = await deleteExam(id);
+
+      console.log("📥 [Admin Page] Received updated exams after delete:", {
+        isArray: Array.isArray(updatedExams),
+        length: updatedExams?.length,
+      });
+
+      setEditingExam(null);
+      // 선택된 학생의 심사 기록을 새로고침
+      if (selectedStudent) {
+        setSelectedStudent({ ...selectedStudent });
+      }
+
+      console.log("✅ [Admin Page] handleDeleteExam completed");
+    } catch (error) {
+      console.error("❌ [Admin Page] handleDeleteExam error:", error);
     }
   };
 

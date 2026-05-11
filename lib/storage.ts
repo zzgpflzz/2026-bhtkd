@@ -30,25 +30,53 @@ export async function loadExams(): Promise<Exam[]> {
 // 2. 학생 추가/수정 (반환값: Student[])
 export async function upsertStudent(student: Student): Promise<Student[]> {
   try {
+    console.log("🔍 [upsertStudent] Starting upsert for student:", {
+      id: student.id,
+      name: student.name,
+    });
+
     const students = await loadStudents();
+    console.log("📋 [upsertStudent] Current students count:", students.length);
+
     const index = students.findIndex((s) => s.id === student.id);
-    if (index >= 0) students[index] = student;
-    else students.push(student);
+    if (index >= 0) {
+      console.log("✏️ [upsertStudent] Updating existing student at index:", index);
+      students[index] = student;
+    } else {
+      console.log("➕ [upsertStudent] Adding new student");
+      students.push(student);
+    }
+
+    console.log("📤 [upsertStudent] Sending to API, total students:", students.length);
+
+    const payload = { type: "students", data: students };
+    console.log("📦 [upsertStudent] Payload structure:", {
+      type: payload.type,
+      dataIsArray: Array.isArray(payload.data),
+      dataLength: payload.data.length,
+    });
 
     const res = await fetch("/api/storage", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "students", data: students }),
+      body: JSON.stringify(payload),
     });
 
+    console.log("📡 [upsertStudent] API response status:", res.status, res.statusText);
+
     if (!res.ok) {
-      console.error("Failed to save student");
+      const errorText = await res.text();
+      console.error("❌ [upsertStudent] API returned error:", errorText);
       return students;
     }
 
+    const responseData = await res.json();
+    console.log("✅ [upsertStudent] API response:", responseData);
+    console.log("✅ [upsertStudent] Successfully saved, returning updated array");
+
     return students;
   } catch (error) {
-    console.error("Failed to upsert student:", error);
+    console.error("❌ [upsertStudent] Exception caught:", error);
     return await loadStudents();
   }
 }
@@ -56,23 +84,35 @@ export async function upsertStudent(student: Student): Promise<Student[]> {
 // 3. 학생 삭제 (반환값: Student[])
 export async function deleteStudent(id: string): Promise<Student[]> {
   try {
+    console.log("🔍 [deleteStudent] Starting delete for student ID:", id);
+
     const students = await loadStudents();
+    console.log("📋 [deleteStudent] Current students count:", students.length);
+
     const updated = students.filter((s) => s.id !== id);
+    console.log("🗑️ [deleteStudent] After filter, remaining students:", updated.length);
+
+    const payload = { type: "students", data: updated };
+    console.log("📤 [deleteStudent] Sending to API");
 
     const res = await fetch("/api/storage", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "students", data: updated }),
+      body: JSON.stringify(payload),
     });
 
+    console.log("📡 [deleteStudent] API response status:", res.status);
+
     if (!res.ok) {
-      console.error("Failed to delete student");
+      const errorText = await res.text();
+      console.error("❌ [deleteStudent] API returned error:", errorText);
       return students;
     }
 
+    console.log("✅ [deleteStudent] Successfully deleted");
     return updated;
   } catch (error) {
-    console.error("Failed to delete student:", error);
+    console.error("❌ [deleteStudent] Exception caught:", error);
     return await loadStudents();
   }
 }
@@ -80,25 +120,48 @@ export async function deleteStudent(id: string): Promise<Student[]> {
 // 4. 심사 추가/수정 (반환값: Exam[])
 export async function upsertExam(exam: Exam): Promise<Exam[]> {
   try {
+    console.log("🔍 [upsertExam] Starting upsert for exam:", {
+      id: exam.id,
+      studentId: exam.studentId,
+      examDate: exam.examDate,
+    });
+
     const exams = await loadExams();
+    console.log("📋 [upsertExam] Current exams count:", exams.length);
+
     const index = exams.findIndex((e) => e.id === exam.id);
-    if (index >= 0) exams[index] = exam;
-    else exams.push(exam);
+    if (index >= 0) {
+      console.log("✏️ [upsertExam] Updating existing exam at index:", index);
+      exams[index] = exam;
+    } else {
+      console.log("➕ [upsertExam] Adding new exam");
+      exams.push(exam);
+    }
+
+    console.log("📤 [upsertExam] Sending to API, total exams:", exams.length);
+
+    const payload = { type: "exams", data: exams };
 
     const res = await fetch("/api/storage", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "exams", data: exams }),
+      body: JSON.stringify(payload),
     });
 
+    console.log("📡 [upsertExam] API response status:", res.status);
+
     if (!res.ok) {
-      console.error("Failed to save exam");
+      const errorText = await res.text();
+      console.error("❌ [upsertExam] API returned error:", errorText);
       return exams;
     }
 
+    const responseData = await res.json();
+    console.log("✅ [upsertExam] API response:", responseData);
+
     return exams;
   } catch (error) {
-    console.error("Failed to upsert exam:", error);
+    console.error("❌ [upsertExam] Exception caught:", error);
     return await loadExams();
   }
 }
@@ -106,23 +169,34 @@ export async function upsertExam(exam: Exam): Promise<Exam[]> {
 // 5. 심사 삭제 (반환값: Exam[])
 export async function deleteExam(id: string): Promise<Exam[]> {
   try {
+    console.log("🔍 [deleteExam] Starting delete for exam ID:", id);
+
     const exams = await loadExams();
+    console.log("📋 [deleteExam] Current exams count:", exams.length);
+
     const updated = exams.filter((e) => e.id !== id);
+    console.log("🗑️ [deleteExam] After filter, remaining exams:", updated.length);
+
+    const payload = { type: "exams", data: updated };
 
     const res = await fetch("/api/storage", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "exams", data: updated }),
+      body: JSON.stringify(payload),
     });
 
+    console.log("📡 [deleteExam] API response status:", res.status);
+
     if (!res.ok) {
-      console.error("Failed to delete exam");
+      const errorText = await res.text();
+      console.error("❌ [deleteExam] API returned error:", errorText);
       return exams;
     }
 
+    console.log("✅ [deleteExam] Successfully deleted");
     return updated;
   } catch (error) {
-    console.error("Failed to delete exam:", error);
+    console.error("❌ [deleteExam] Exception caught:", error);
     return await loadExams();
   }
 }
