@@ -34,12 +34,22 @@ export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
   const [pw, setPw] = useState("");
   const [pwError, setPwError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
+
+  // 컴포넌트 마운트 시 세션 스토리지에서 인증 상태 확인
+  useEffect(() => {
+    const savedAuth = sessionStorage.getItem("baekho-admin-auth");
+    if (savedAuth === "true") {
+      setAuthed(true);
+    }
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     if (authed) {
@@ -55,9 +65,16 @@ export default function AdminPage() {
     if (pw === ADMIN_PASSWORD) {
       setAuthed(true);
       setPwError("");
+      // 세션 스토리지에 인증 상태 저장 (브라우저 탭 닫으면 사라짐)
+      sessionStorage.setItem("baekho-admin-auth", "true");
     } else {
       setPwError("비밀번호가 올바르지 않습니다.");
     }
+  };
+
+  const handleLogout = () => {
+    setAuthed(false);
+    sessionStorage.removeItem("baekho-admin-auth");
   };
 
   const filtered = students.filter((s) =>
@@ -134,6 +151,17 @@ export default function AdminPage() {
   };
 
   // ─────────────────────────────────────────────
+  // 로딩 중
+  // ─────────────────────────────────────────────
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-paper text-ink flex items-center justify-center p-4">
+        <div className="text-muted">로딩 중...</div>
+      </main>
+    );
+  }
+
+  // ─────────────────────────────────────────────
   // 비밀번호 화면
   // ─────────────────────────────────────────────
   if (!authed) {
@@ -191,12 +219,20 @@ export default function AdminPage() {
               학생 관리
             </h1>
           </div>
-          <a
-            href="/"
-            className="text-sm text-ink-soft hover:text-ink inline-flex items-center gap-1"
-          >
-            <ArrowLeft size={14} /> 메인으로
-          </a>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleLogout}
+              className="text-xs px-3 py-1.5 border border-line text-muted hover:border-ink hover:text-ink transition"
+            >
+              로그아웃
+            </button>
+            <a
+              href="/"
+              className="text-sm text-ink-soft hover:text-ink inline-flex items-center gap-1"
+            >
+              <ArrowLeft size={14} /> 메인으로
+            </a>
+          </div>
         </div>
       </header>
 
