@@ -1,36 +1,65 @@
 import { Student, Exam, Grade } from "@/lib/types";
 
-// 1. 데이터 불러오기 (로그 최소화로 속도 개선)
+// 1. 데이터 불러오기 (캐싱으로 속도 개선)
 export async function loadStudents(): Promise<Student[]> {
   try {
+    // 캐시가 유효하면 즉시 반환
+    if (studentsCache && Date.now() - cacheTimestamp < CACHE_TTL) {
+      return studentsCache;
+    }
+
     const res = await fetch("/api/storage?type=students", {
       cache: "no-store",
     });
-    if (!res.ok) return [];
+    if (!res.ok) return studentsCache || [];
     const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    const students = Array.isArray(data) ? data : [];
+
+    // 캐시 업데이트
+    studentsCache = students;
+    cacheTimestamp = Date.now();
+
+    return students;
   } catch (error) {
     console.error("Failed to load students:", error);
-    return [];
+    return studentsCache || [];
   }
 }
 
 export async function loadExams(): Promise<Exam[]> {
   try {
+    // 캐시가 유효하면 즉시 반환
+    if (examsCache && Date.now() - cacheTimestamp < CACHE_TTL) {
+      return examsCache;
+    }
+
     const res = await fetch("/api/storage?type=exams", { cache: "no-store" });
-    if (!res.ok) return [];
+    if (!res.ok) return examsCache || [];
     const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    const exams = Array.isArray(data) ? data : [];
+
+    // 캐시 업데이트
+    examsCache = exams;
+    cacheTimestamp = Date.now();
+
+    return exams;
   } catch (error) {
     console.error("Failed to load exams:", error);
-    return [];
+    return examsCache || [];
   }
 }
 
-// 2. 학생 추가/수정 (반환값: Student[]) - 낙관적 업데이트로 속도 개선
+// 메모리 캐시 (빠른 접근용)
+let studentsCache: Student[] | null = null;
+let examsCache: Exam[] | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL = 5000; // 5초 캐시
+
+// 2. 학생 추가/수정 (반환값: Student[]) - 진짜 낙관적 업데이트
 export async function upsertStudent(student: Student): Promise<Student[]> {
   try {
-    const students = await loadStudents();
+    // 캐시에서 현재 학생 목록 가져오기 (API 호출 없이)
+    const students = studentsCache ? [...studentsCache] : await loadStudents();
 
     const index = students.findIndex((s) => s.id === student.id);
     if (index >= 0) {
@@ -39,19 +68,21 @@ export async function upsertStudent(student: Student): Promise<Student[]> {
       students.push(student);
     }
 
-    // 낙관적 업데이트: API 응답을 기다리지 않고 즉시 반환
-    const updatedStudents = [...students];
+    // 캐시 즉시 업데이트
+    studentsCache = students;
+    cacheTimestamp = Date.now();
 
-    // 백그라운드 저장
+    // 백그라운드 저장 (완전히 비동기)
     fetch("/api/storage", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "students", data: students }),
     }).catch((error) => console.error("❌ Save failed:", error));
 
-    return updatedStudents;
+    return students;
   } catch (error) {
     console.error("❌ upsertStudent error:", error);
+    studentsCache = null;
     return await loadStudents();
   }
 }
@@ -59,11 +90,12 @@ export async function upsertStudent(student: Student): Promise<Student[]> {
 // 3. 학생 삭제 (반환값: Student[]) - 낙관적 업데이트
 export async function deleteStudent(id: string): Promise<Student[]> {
   try {
-    const students = await loadStudents();
+    const students = studentsCache ? [...studentsCache] : await loadStudents();
     const updated = students.filter((s) => s.id !== id);
 
-    // 낙관적 업데이트
-    const updatedStudents = [...updated];
+    // 캐시 즉시 업데이트
+    studentsCache = updated;
+    cacheTimestamp = Date.now();
 
     // 백그라운드 저장
     fetch("/api/storage", {
@@ -72,9 +104,10 @@ export async function deleteStudent(id: string): Promise<Student[]> {
       body: JSON.stringify({ type: "students", data: updated }),
     }).catch((error) => console.error("❌ Delete failed:", error));
 
-    return updatedStudents;
+    return updated;
   } catch (error) {
     console.error("❌ deleteStudent error:", error);
+    studentsCache = null;
     return await loadStudents();
   }
 }
@@ -82,7 +115,7 @@ export async function deleteStudent(id: string): Promise<Student[]> {
 // 4. 심사 추가/수정 (반환값: Exam[]) - 낙관적 업데이트
 export async function upsertExam(exam: Exam): Promise<Exam[]> {
   try {
-    const exams = await loadExams();
+    const exams = examsCache ? [...examsCache] : await loadExams();
 
     const index = exams.findIndex((e) => e.id === exam.id);
     if (index >= 0) {
@@ -91,8 +124,9 @@ export async function upsertExam(exam: Exam): Promise<Exam[]> {
       exams.push(exam);
     }
 
-    // 낙관적 업데이트
-    const updatedExams = [...exams];
+    // 캐시 즉시 업데이트
+    examsCache = exams;
+    cacheTimestamp = Date.now();
 
     // 백그라운드 저장
     fetch("/api/storage", {
@@ -101,9 +135,10 @@ export async function upsertExam(exam: Exam): Promise<Exam[]> {
       body: JSON.stringify({ type: "exams", data: exams }),
     }).catch((error) => console.error("❌ Save failed:", error));
 
-    return updatedExams;
+    return exams;
   } catch (error) {
     console.error("❌ upsertExam error:", error);
+    examsCache = null;
     return await loadExams();
   }
 }
@@ -111,11 +146,12 @@ export async function upsertExam(exam: Exam): Promise<Exam[]> {
 // 5. 심사 삭제 (반환값: Exam[]) - 낙관적 업데이트
 export async function deleteExam(id: string): Promise<Exam[]> {
   try {
-    const exams = await loadExams();
+    const exams = examsCache ? [...examsCache] : await loadExams();
     const updated = exams.filter((e) => e.id !== id);
 
-    // 낙관적 업데이트
-    const updatedExams = [...updated];
+    // 캐시 즉시 업데이트
+    examsCache = updated;
+    cacheTimestamp = Date.now();
 
     // 백그라운드 저장
     fetch("/api/storage", {
@@ -124,16 +160,23 @@ export async function deleteExam(id: string): Promise<Exam[]> {
       body: JSON.stringify({ type: "exams", data: updated }),
     }).catch((error) => console.error("❌ Delete failed:", error));
 
-    return updatedExams;
+    return updated;
   } catch (error) {
     console.error("❌ deleteExam error:", error);
+    examsCache = null;
     return await loadExams();
   }
 }
 
-// 6. 유틸리티 함수
+// 6. 유틸리티 함수 (캐시 우선 활용)
 export async function findStudent(id: string): Promise<Student | null> {
   try {
+    // 캐시에서 먼저 찾기
+    if (studentsCache) {
+      const cached = studentsCache.find((s) => s.id === id);
+      if (cached) return cached;
+    }
+
     const students = await loadStudents();
     return students.find((s) => s.id === id) || null;
   } catch (error) {
@@ -163,12 +206,24 @@ export async function findStudentByNameAndBirthDate(
 
 export async function getStudentExams(studentId: string): Promise<Exam[]> {
   try {
+    // 캐시에서 먼저 찾기
+    if (examsCache) {
+      return examsCache.filter((e) => e.studentId === studentId);
+    }
+
     const exams = await loadExams();
     return exams.filter((e) => e.studentId === studentId);
   } catch (error) {
     console.error("Failed to get student exams:", error);
     return [];
   }
+}
+
+// 캐시 무효화 (필요 시 사용)
+export function clearCache() {
+  studentsCache = null;
+  examsCache = null;
+  cacheTimestamp = 0;
 }
 
 export const newStudentTemplate = (id?: string): Student => ({
