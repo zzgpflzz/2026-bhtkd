@@ -132,8 +132,6 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
     const type = new URL(req.url).searchParams.get("type");
-    console.log("🔍 [API GET] Request type:", type);
-
     const doc = await getFirestoreDocument("data/taekwondo");
 
     let allData = { students: [], exams: [] };
@@ -151,27 +149,17 @@ export async function GET(req: NextRequest) {
           convertFromFirestoreFields(item.mapValue?.fields || {})
         ),
       };
-
-      console.log("✅ [API GET] Document exists, data loaded:", {
-        studentsCount: allData.students.length,
-        examsCount: allData.exams.length,
-      });
-    } else {
-      console.log("⚠️ [API GET] Document does not exist, returning empty data");
     }
 
     if (type === "students") {
-      console.log("📤 [API GET] Returning students:", allData.students.length);
       return NextResponse.json(allData.students);
     }
     if (type === "exams") {
-      console.log("📤 [API GET] Returning exams:", allData.exams.length);
       return NextResponse.json(allData.exams);
     }
-    console.log("📤 [API GET] Returning all data");
     return NextResponse.json(allData);
   } catch (error) {
-    console.error("❌ [API GET] Firestore GET Error:", error);
+    console.error("❌ [API GET] Error:", error);
     return NextResponse.json({ students: [], exams: [] });
   }
 }
@@ -181,15 +169,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { type, data: payload } = body;
 
-    console.log("🔍 [API POST] Request received:", {
-      type,
-      payloadType: Array.isArray(payload) ? "array" : typeof payload,
-      payloadLength: Array.isArray(payload) ? payload.length : "N/A",
-      firstItem: Array.isArray(payload) && payload.length > 0 ? payload[0] : null,
-    });
-
     if (!type || !payload) {
-      console.error("❌ [API POST] Missing type or payload");
       return NextResponse.json(
         { error: "Missing type or data" },
         { status: 400 }
@@ -197,19 +177,16 @@ export async function POST(req: NextRequest) {
     }
 
     if (type !== "students" && type !== "exams") {
-      console.error("❌ [API POST] Invalid type:", type);
       return NextResponse.json({ error: "Invalid type" }, { status: 400 });
     }
 
     if (!Array.isArray(payload)) {
-      console.error("❌ [API POST] Payload is not an array:", typeof payload);
       return NextResponse.json(
         { error: "Data must be an array" },
         { status: 400 }
       );
     }
 
-    console.log("🔍 [API POST] Fetching current document...");
     const doc = await getFirestoreDocument("data/taekwondo");
 
     let currentData: { students: any[]; exams: any[] } = {
@@ -218,7 +195,6 @@ export async function POST(req: NextRequest) {
     };
 
     if (doc && doc.fields) {
-      // 기존 데이터 변환
       const students = doc.fields.students?.arrayValue?.values || [];
       const exams = doc.fields.exams?.arrayValue?.values || [];
 
@@ -230,45 +206,17 @@ export async function POST(req: NextRequest) {
           convertFromFirestoreFields(item.mapValue?.fields || {})
         ),
       };
-
-      console.log("✅ [API POST] Document exists, current data:", {
-        studentsCount: currentData.students.length,
-        examsCount: currentData.exams.length,
-      });
-    } else {
-      console.log("⚠️ [API POST] Document does not exist, will create new");
     }
 
     // 데이터 업데이트
     if (type === "students") {
       currentData.students = payload;
-      console.log("📝 [API POST] Updated students array, new count:", payload.length);
     } else if (type === "exams") {
       currentData.exams = payload;
-      console.log("📝 [API POST] Updated exams array, new count:", payload.length);
     }
-
-    console.log("💾 [API POST] Saving to Firestore...", {
-      studentsCount: currentData.students.length,
-      examsCount: currentData.exams.length,
-    });
 
     // Firestore REST API로 저장
     await setFirestoreDocument("data/taekwondo", currentData);
-
-    console.log("✅ [API POST] Successfully saved to Firestore");
-
-    // 저장 후 검증
-    const verifyDoc = await getFirestoreDocument("data/taekwondo");
-    if (verifyDoc && verifyDoc.fields) {
-      const verifyStudents = verifyDoc.fields.students?.arrayValue?.values || [];
-      const verifyExams = verifyDoc.fields.exams?.arrayValue?.values || [];
-
-      console.log("✅ [API POST] Verification - Data confirmed in Firestore:", {
-        studentsCount: verifyStudents.length,
-        examsCount: verifyExams.length,
-      });
-    }
 
     return NextResponse.json({
       success: true,
@@ -276,7 +224,7 @@ export async function POST(req: NextRequest) {
       count: payload.length,
     });
   } catch (error) {
-    console.error("❌ [API POST] Firestore POST Error:", error);
+    console.error("❌ [API POST] Error:", error);
     return NextResponse.json(
       { error: "저장 실패", details: String(error) },
       { status: 500 }

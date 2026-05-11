@@ -66,23 +66,11 @@ export default function AdminPage() {
 
   const handleSaveStudent = async (s: Student) => {
     try {
-      console.log("🎯 [Admin Page] handleSaveStudent called for:", {
-        id: s.id,
-        name: s.name,
-      });
-
       const updatedList = await upsertStudent(s);
-
-      console.log("📥 [Admin Page] Received updated list:", {
-        isArray: Array.isArray(updatedList),
-        length: updatedList?.length,
-      });
 
       if (Array.isArray(updatedList)) {
         setStudents(updatedList);
-        console.log("✅ [Admin Page] Students state updated with", updatedList.length, "items");
       } else {
-        console.error("❌ [Admin Page] Updated list is not an array!");
         setStudents([]);
       }
 
@@ -90,10 +78,8 @@ export default function AdminPage() {
       if (selectedStudent?.id === s.id) {
         setSelectedStudent(s);
       }
-
-      console.log("✅ [Admin Page] handleSaveStudent completed");
     } catch (error) {
-      console.error("❌ [Admin Page] handleSaveStudent error:", error);
+      console.error("❌ Save student error:", error);
     }
   };
 
@@ -101,18 +87,10 @@ export default function AdminPage() {
     if (!confirm("정말 삭제하시겠습니까? 모든 심사 기록도 함께 삭제됩니다.")) return;
 
     try {
-      console.log("🎯 [Admin Page] handleDeleteStudent called for ID:", id);
-
       const updatedList = await deleteStudent(id);
-
-      console.log("📥 [Admin Page] Received updated list after delete:", {
-        isArray: Array.isArray(updatedList),
-        length: updatedList?.length,
-      });
 
       if (Array.isArray(updatedList)) {
         setStudents(updatedList);
-        console.log("✅ [Admin Page] Students state updated");
       } else {
         setStudents([]);
       }
@@ -121,33 +99,21 @@ export default function AdminPage() {
         setSelectedStudent(null);
       }
     } catch (error) {
-      console.error("❌ [Admin Page] handleDeleteStudent error:", error);
+      console.error("❌ Delete student error:", error);
     }
   };
 
   const handleSaveExam = async (e: Exam) => {
     try {
-      console.log("🎯 [Admin Page] handleSaveExam called for:", {
-        id: e.id,
-        studentId: e.studentId,
-      });
-
-      const updatedExams = await upsertExam(e);
-
-      console.log("📥 [Admin Page] Received updated exams:", {
-        isArray: Array.isArray(updatedExams),
-        length: updatedExams?.length,
-      });
-
+      await upsertExam(e);
       setEditingExam(null);
+
       // 선택된 학생의 심사 기록을 새로고침
       if (selectedStudent) {
         setSelectedStudent({ ...selectedStudent });
       }
-
-      console.log("✅ [Admin Page] handleSaveExam completed");
     } catch (error) {
-      console.error("❌ [Admin Page] handleSaveExam error:", error);
+      console.error("❌ Save exam error:", error);
     }
   };
 
@@ -155,24 +121,15 @@ export default function AdminPage() {
     if (!confirm("이 심사 기록을 삭제하시겠습니까?")) return;
 
     try {
-      console.log("🎯 [Admin Page] handleDeleteExam called for ID:", id);
-
-      const updatedExams = await deleteExam(id);
-
-      console.log("📥 [Admin Page] Received updated exams after delete:", {
-        isArray: Array.isArray(updatedExams),
-        length: updatedExams?.length,
-      });
-
+      await deleteExam(id);
       setEditingExam(null);
+
       // 선택된 학생의 심사 기록을 새로고침
       if (selectedStudent) {
         setSelectedStudent({ ...selectedStudent });
       }
-
-      console.log("✅ [Admin Page] handleDeleteExam completed");
     } catch (error) {
-      console.error("❌ [Admin Page] handleDeleteExam error:", error);
+      console.error("❌ Delete exam error:", error);
     }
   };
 
