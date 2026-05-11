@@ -45,7 +45,7 @@ export default function AdminPage() {
     if (authed) {
       (async () => {
         const list = await loadStudents();
-        setStudents(list);
+        setStudents(list || []);
       })();
     }
   }, [authed]);
@@ -85,12 +85,22 @@ export default function AdminPage() {
   const handleSaveExam = async (e: Exam) => {
     await upsertExam(e);
     setEditingExam(null);
+    // 선택된 학생의 심사 기록을 새로고침
+    if (selectedStudent) {
+      const updatedExams = await getStudentExams(selectedStudent.id);
+      // StudentDetail 컴포넌트가 자동으로 재렌더링되도록 키를 변경
+      setSelectedStudent({ ...selectedStudent });
+    }
   };
 
   const handleDeleteExam = async (id: string) => {
     if (!confirm("이 심사 기록을 삭제하시겠습니까?")) return;
     await deleteExam(id);
     setEditingExam(null);
+    // 선택된 학생의 심사 기록을 새로고침
+    if (selectedStudent) {
+      setSelectedStudent({ ...selectedStudent });
+    }
   };
 
   // ─────────────────────────────────────────────
@@ -294,9 +304,9 @@ function StudentDetail({
   useEffect(() => {
     (async () => {
       const list = await getStudentExams(student.id);
-      setExams(list);
+      setExams(list || []);
     })();
-  }, [student.id]);
+  }, [student.id, student]);
 
   return (
     <div className="space-y-4">

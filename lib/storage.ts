@@ -10,20 +10,27 @@ export async function loadStudents(): Promise<Student[]> {
     const res = await fetch("/api/storage?type=students");
     if (!res.ok) throw new Error("Failed to load students");
     const data = await res.json();
-    studentsCache = Array.isArray(data) ? data : [];
+    studentsCache = Array.isArray(data) ? data : (data || []);
     return studentsCache;
-  } catch {
+  } catch (error) {
+    console.error("loadStudents error:", error);
     return studentsCache.length > 0 ? studentsCache : [];
   }
 }
 
 export async function saveStudents(students: Student[]): Promise<void> {
   studentsCache = students;
-  await fetch("/api/storage", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type: "students", data: students }),
-  });
+  try {
+    const res = await fetch("/api/storage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "students", data: students }),
+    });
+    if (!res.ok) throw new Error("Failed to save students");
+  } catch (error) {
+    console.error("saveStudents error:", error);
+    throw error;
+  }
 }
 
 export async function loadExams(): Promise<Exam[]> {
@@ -31,20 +38,27 @@ export async function loadExams(): Promise<Exam[]> {
     const res = await fetch("/api/storage?type=exams");
     if (!res.ok) throw new Error("Failed to load exams");
     const data = await res.json();
-    examsCache = Array.isArray(data) ? data : [];
+    examsCache = Array.isArray(data) ? data : (data || []);
     return examsCache;
-  } catch {
+  } catch (error) {
+    console.error("loadExams error:", error);
     return examsCache.length > 0 ? examsCache : [];
   }
 }
 
 export async function saveExams(exams: Exam[]): Promise<void> {
   examsCache = exams;
-  await fetch("/api/storage", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type: "exams", data: exams }),
-  });
+  try {
+    const res = await fetch("/api/storage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "exams", data: exams }),
+    });
+    if (!res.ok) throw new Error("Failed to save exams");
+  } catch (error) {
+    console.error("saveExams error:", error);
+    throw error;
+  }
 }
 
 export async function findStudent(name: string, birthDate: string): Promise<Student | null> {
