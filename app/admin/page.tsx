@@ -54,8 +54,14 @@ export default function AdminPage() {
   useEffect(() => {
     if (authed) {
       (async () => {
+        const startTime = performance.now();
+        console.log("🔍 [Admin Page] Loading students...");
+
         const list = await loadStudents();
         setStudents(list || []);
+
+        const elapsed = performance.now() - startTime;
+        console.log(`✅ [Admin Page] Students loaded and rendered - ${elapsed.toFixed(2)}ms`);
       })();
     }
   }, [authed]);
@@ -369,8 +375,14 @@ function StudentDetail({
 
   useEffect(() => {
     (async () => {
+      const startTime = performance.now();
+      console.log(`🔍 [StudentDetail] Loading exams for ${student.name}...`);
+
       const list = await getStudentExams(student.id);
       setExams(list || []);
+
+      const elapsed = performance.now() - startTime;
+      console.log(`✅ [StudentDetail] Exams loaded and rendered - ${elapsed.toFixed(2)}ms`);
     })();
   }, [student.id, student]);
 

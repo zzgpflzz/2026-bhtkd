@@ -50,14 +50,29 @@ export default function StudentResultPage() {
 
   useEffect(() => {
     (async () => {
+      const pageStartTime = performance.now();
+      console.log(`🔍 [Student Page] Loading data for student ID: ${params.id}`);
+
+      const studentStartTime = performance.now();
       const list = await loadStudents();
+      const studentLoadTime = performance.now() - studentStartTime;
+      console.log(`📋 [Student Page] Students loaded - ${studentLoadTime.toFixed(2)}ms`);
+
       const s = list.find((x) => x.id === params.id) ?? null;
       setStudent(s);
+      console.log(`🔍 [Student Page] Student found:`, s?.name || "Not found");
 
       if (s) {
+        const examStartTime = performance.now();
         const examList = await getStudentExams(s.id);
+        const examLoadTime = performance.now() - examStartTime;
+        console.log(`📋 [Student Page] Exams loaded - ${examLoadTime.toFixed(2)}ms`);
+
         setExams(examList);
       }
+
+      const totalTime = performance.now() - pageStartTime;
+      console.log(`✅ [Student Page] Total page load - ${totalTime.toFixed(2)}ms`);
     })();
   }, [params.id]);
 

@@ -130,13 +130,20 @@ function convertFromFirestoreFields(fields: any): any {
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
+  const startTime = performance.now();
   try {
     const type = new URL(req.url).searchParams.get("type");
+    console.log(`📡 [API GET] Request for type: ${type}`);
+
+    const firestoreStart = performance.now();
     const doc = await getFirestoreDocument("data/taekwondo");
+    const firestoreTime = performance.now() - firestoreStart;
+    console.log(`🔥 [API GET] Firestore fetch - ${firestoreTime.toFixed(2)}ms`);
 
     let allData = { students: [], exams: [] };
 
     if (doc && doc.fields) {
+      const convertStart = performance.now();
       // Firestore REST API 형식에서 변환
       const students = doc.fields.students?.arrayValue?.values || [];
       const exams = doc.fields.exams?.arrayValue?.values || [];
@@ -149,7 +156,12 @@ export async function GET(req: NextRequest) {
           convertFromFirestoreFields(item.mapValue?.fields || {})
         ),
       };
+      const convertTime = performance.now() - convertStart;
+      console.log(`📦 [API GET] Data conversion - ${convertTime.toFixed(2)}ms (${students.length} students, ${exams.length} exams)`);
     }
+
+    const totalTime = performance.now() - startTime;
+    console.log(`✅ [API GET] Total - ${totalTime.toFixed(2)}ms`);
 
     if (type === "students") {
       return NextResponse.json(allData.students);
@@ -159,7 +171,8 @@ export async function GET(req: NextRequest) {
     }
     return NextResponse.json(allData);
   } catch (error) {
-    console.error("❌ [API GET] Error:", error);
+    const elapsed = performance.now() - startTime;
+    console.error(`❌ [API GET] Error after ${elapsed.toFixed(2)}ms:`, error);
     return NextResponse.json({ students: [], exams: [] });
   }
 }

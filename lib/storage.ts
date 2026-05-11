@@ -2,49 +2,87 @@ import { Student, Exam, Grade } from "@/lib/types";
 
 // 1. 데이터 불러오기 (캐싱으로 속도 개선)
 export async function loadStudents(): Promise<Student[]> {
+  const startTime = performance.now();
   try {
     // 캐시가 유효하면 즉시 반환
     if (studentsCache && Date.now() - cacheTimestamp < CACHE_TTL) {
+      const elapsed = performance.now() - startTime;
+      console.log(`⚡ [loadStudents] Cache HIT - ${elapsed.toFixed(2)}ms`);
       return studentsCache;
     }
+
+    console.log("📡 [loadStudents] Cache MISS - Fetching from API...");
+    const fetchStart = performance.now();
 
     const res = await fetch("/api/storage?type=students", {
       cache: "no-store",
     });
+
+    const fetchTime = performance.now() - fetchStart;
+    console.log(`📡 [loadStudents] API Response - ${fetchTime.toFixed(2)}ms`);
+
     if (!res.ok) return studentsCache || [];
+
+    const parseStart = performance.now();
     const data = await res.json();
+    const parseTime = performance.now() - parseStart;
+    console.log(`📦 [loadStudents] JSON Parse - ${parseTime.toFixed(2)}ms`);
+
     const students = Array.isArray(data) ? data : [];
 
     // 캐시 업데이트
     studentsCache = students;
     cacheTimestamp = Date.now();
 
+    const totalTime = performance.now() - startTime;
+    console.log(`✅ [loadStudents] Total - ${totalTime.toFixed(2)}ms (${students.length} students)`);
+
     return students;
   } catch (error) {
-    console.error("Failed to load students:", error);
+    const elapsed = performance.now() - startTime;
+    console.error(`❌ [loadStudents] Failed after ${elapsed.toFixed(2)}ms:`, error);
     return studentsCache || [];
   }
 }
 
 export async function loadExams(): Promise<Exam[]> {
+  const startTime = performance.now();
   try {
     // 캐시가 유효하면 즉시 반환
     if (examsCache && Date.now() - cacheTimestamp < CACHE_TTL) {
+      const elapsed = performance.now() - startTime;
+      console.log(`⚡ [loadExams] Cache HIT - ${elapsed.toFixed(2)}ms`);
       return examsCache;
     }
 
+    console.log("📡 [loadExams] Cache MISS - Fetching from API...");
+    const fetchStart = performance.now();
+
     const res = await fetch("/api/storage?type=exams", { cache: "no-store" });
+
+    const fetchTime = performance.now() - fetchStart;
+    console.log(`📡 [loadExams] API Response - ${fetchTime.toFixed(2)}ms`);
+
     if (!res.ok) return examsCache || [];
+
+    const parseStart = performance.now();
     const data = await res.json();
+    const parseTime = performance.now() - parseStart;
+    console.log(`📦 [loadExams] JSON Parse - ${parseTime.toFixed(2)}ms`);
+
     const exams = Array.isArray(data) ? data : [];
 
     // 캐시 업데이트
     examsCache = exams;
     cacheTimestamp = Date.now();
 
+    const totalTime = performance.now() - startTime;
+    console.log(`✅ [loadExams] Total - ${totalTime.toFixed(2)}ms (${exams.length} exams)`);
+
     return exams;
   } catch (error) {
-    console.error("Failed to load exams:", error);
+    const elapsed = performance.now() - startTime;
+    console.error(`❌ [loadExams] Failed after ${elapsed.toFixed(2)}ms:`, error);
     return examsCache || [];
   }
 }
@@ -205,16 +243,27 @@ export async function findStudentByNameAndBirthDate(
 }
 
 export async function getStudentExams(studentId: string): Promise<Exam[]> {
+  const startTime = performance.now();
   try {
     // 캐시에서 먼저 찾기
     if (examsCache) {
-      return examsCache.filter((e) => e.studentId === studentId);
+      const filtered = examsCache.filter((e) => e.studentId === studentId);
+      const elapsed = performance.now() - startTime;
+      console.log(`⚡ [getStudentExams] Cache - ${elapsed.toFixed(2)}ms (${filtered.length} exams for student ${studentId})`);
+      return filtered;
     }
 
+    console.log(`📡 [getStudentExams] Loading exams for student ${studentId}...`);
     const exams = await loadExams();
-    return exams.filter((e) => e.studentId === studentId);
+    const filtered = exams.filter((e) => e.studentId === studentId);
+
+    const elapsed = performance.now() - startTime;
+    console.log(`✅ [getStudentExams] Total - ${elapsed.toFixed(2)}ms (${filtered.length} exams)`);
+
+    return filtered;
   } catch (error) {
-    console.error("Failed to get student exams:", error);
+    const elapsed = performance.now() - startTime;
+    console.error(`❌ [getStudentExams] Failed after ${elapsed.toFixed(2)}ms:`, error);
     return [];
   }
 }
