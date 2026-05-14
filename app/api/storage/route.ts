@@ -1,246 +1,284 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Firebase Firestore REST API 사용
-// Admin SDK보다 간단하고 API Key만으로 작동
+// ─────────────────────────────────────────────
+// Firestore REST API 설정
+// ─────────────────────────────────────────────
 const FIREBASE_CONFIG = {
   projectId: "bhtkd-37f39",
   apiKey: "AIzaSyCM9Ph-47dtlMjLSordkd8ptz8mQsN6b7s",
 };
 
-const FIRESTORE_BASE_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents`;
-
-// Firestore 문서 가져오기
-async function getFirestoreDocument(path: string) {
-  const url = `${FIRESTORE_BASE_URL}/${path}?key=${FIREBASE_CONFIG.apiKey}`;
-  const response = await fetch(url);
-
-  if (response.status === 404) {
-    return null; // 문서가 존재하지 않음
-  }
-
-  if (!response.ok) {
-    throw new Error(`Firestore GET failed: ${response.statusText}`);
-  }
-
-  return await response.json();
-}
-
-// Firestore 문서 생성/업데이트
-async function setFirestoreDocument(path: string, data: any) {
-  const url = `${FIRESTORE_BASE_URL}/${path}?key=${FIREBASE_CONFIG.apiKey}`;
-
-  // Firestore REST API 형식으로 변환
-  const firestoreData = {
-    fields: {
-      students: {
-        arrayValue: {
-          values: (data.students || []).map((student: any) => ({
-            mapValue: { fields: convertToFirestoreFields(student) },
-          })),
-        },
-      },
-      exams: {
-        arrayValue: {
-          values: (data.exams || []).map((exam: any) => ({
-            mapValue: { fields: convertToFirestoreFields(exam) },
-          })),
-        },
-      },
-    },
-  };
-
-  const response = await fetch(url, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(firestoreData),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Firestore SET failed: ${response.statusText} - ${errorText}`);
-  }
-
-  return await response.json();
-}
-
-// JavaScript 객체를 Firestore 필드 형식으로 변환
-function convertToFirestoreFields(obj: any): any {
-  const fields: any = {};
-
-  for (const [key, value] of Object.entries(obj)) {
-    if (value === null || value === undefined) {
-      fields[key] = { nullValue: null };
-    } else if (typeof value === "string") {
-      fields[key] = { stringValue: value };
-    } else if (typeof value === "number") {
-      fields[key] = { integerValue: value };
-    } else if (typeof value === "boolean") {
-      fields[key] = { booleanValue: value };
-    } else if (typeof value === "object" && !Array.isArray(value)) {
-      fields[key] = { mapValue: { fields: convertToFirestoreFields(value) } };
-    } else if (Array.isArray(value)) {
-      fields[key] = {
-        arrayValue: {
-          values: value.map((item) => {
-            if (typeof item === "object") {
-              return { mapValue: { fields: convertToFirestoreFields(item) } };
-            }
-            return convertToFirestoreFields({ value: item }).value;
-          }),
-        },
-      };
-    }
-  }
-
-  return fields;
-}
-
-// Firestore 형식에서 JavaScript 객체로 변환
-function convertFromFirestoreFields(fields: any): any {
-  const obj: any = {};
-
-  for (const [key, value] of Object.entries(fields as any)) {
-    const val = value as any;
-
-    if (val.stringValue !== undefined) {
-      obj[key] = val.stringValue;
-    } else if (val.integerValue !== undefined) {
-      obj[key] = parseInt(val.integerValue);
-    } else if (val.doubleValue !== undefined) {
-      obj[key] = val.doubleValue;
-    } else if (val.booleanValue !== undefined) {
-      obj[key] = val.booleanValue;
-    } else if (val.nullValue !== undefined) {
-      obj[key] = null;
-    } else if (val.mapValue) {
-      obj[key] = convertFromFirestoreFields(val.mapValue.fields);
-    } else if (val.arrayValue) {
-      obj[key] = val.arrayValue.values?.map((item: any) => {
-        if (item.mapValue) {
-          return convertFromFirestoreFields(item.mapValue.fields);
-        }
-        return convertFromFirestoreFields({ value: item }).value;
-      }) || [];
-    }
-  }
-
-  return obj;
-}
+const BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents`;
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
-  const startTime = performance.now();
-  try {
-    const type = new URL(req.url).searchParams.get("type");
-    console.log(`📡 [API GET] Request for type: ${type}`);
+// ─────────────────────────────────────────────
+// JavaScript ↔ Firestore 필드 변환
+// ─────────────────────────────────────────────
+function toValue(v: unknown): any {
+  if (v === null || v === undefined) return { nullValue: null };
+  if (typeof v === "string") return { stringValue: v };
+  if (typeof v === "boolean") return { booleanValue: v };
+  if (typeof v === "number") {
+    return Number.isInteger(v)
+      ? { integerValue: String(v) }
+      : { doubleValue: v };
+  }
+  if (Array.isArray(v)) {
+    return { arrayValue: { values: v.map(toValue) } };
+  }
+  if (typeof v === "object") {
+    return { mapValue: { fields: toFields(v as Record<string, unknown>) } };
+  }
+  return { stringValue: String(v) };
+}
 
-    const firestoreStart = performance.now();
-    const doc = await getFirestoreDocument("data/taekwondo");
-    const firestoreTime = performance.now() - firestoreStart;
-    console.log(`🔥 [API GET] Firestore fetch - ${firestoreTime.toFixed(2)}ms`);
+function toFields(obj: Record<string, unknown>): Record<string, any> {
+  const fields: Record<string, any> = {};
+  for (const [k, v] of Object.entries(obj)) fields[k] = toValue(v);
+  return fields;
+}
 
-    let allData = { students: [], exams: [] };
+function fromValue(v: any): any {
+  if (v == null) return null;
+  if (v.stringValue !== undefined) return v.stringValue;
+  if (v.integerValue !== undefined) return parseInt(v.integerValue, 10);
+  if (v.doubleValue !== undefined) return v.doubleValue;
+  if (v.booleanValue !== undefined) return v.booleanValue;
+  if (v.nullValue !== undefined) return null;
+  if (v.mapValue) return fromFields(v.mapValue.fields ?? {});
+  if (v.arrayValue) {
+    return (v.arrayValue.values ?? []).map((item: any) => fromValue(item));
+  }
+  return null;
+}
 
-    if (doc && doc.fields) {
-      const convertStart = performance.now();
-      // Firestore REST API 형식에서 변환
-      const students = doc.fields.students?.arrayValue?.values || [];
-      const exams = doc.fields.exams?.arrayValue?.values || [];
+function fromFields(fields: Record<string, any>): Record<string, any> {
+  const obj: Record<string, any> = {};
+  for (const [k, v] of Object.entries(fields ?? {})) obj[k] = fromValue(v);
+  return obj;
+}
 
-      allData = {
-        students: students.map((item: any) =>
-          convertFromFirestoreFields(item.mapValue?.fields || {})
-        ),
-        exams: exams.map((item: any) =>
-          convertFromFirestoreFields(item.mapValue?.fields || {})
-        ),
-      };
-      const convertTime = performance.now() - convertStart;
-      console.log(`📦 [API GET] Data conversion - ${convertTime.toFixed(2)}ms (${students.length} students, ${exams.length} exams)`);
+// ─────────────────────────────────────────────
+// 컬렉션 단위 헬퍼
+// ─────────────────────────────────────────────
+async function listCollection(collection: string): Promise<any[]> {
+  const results: any[] = [];
+  let pageToken: string | undefined;
+
+  do {
+    const url = new URL(`${BASE}/${collection}`);
+    url.searchParams.set("key", FIREBASE_CONFIG.apiKey);
+    url.searchParams.set("pageSize", "300");
+    if (pageToken) url.searchParams.set("pageToken", pageToken);
+
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    if (res.status === 404) return results; // 컬렉션 없음 = 빈 배열
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`Firestore LIST ${collection} ${res.status} ${txt}`);
     }
-
-    const totalTime = performance.now() - startTime;
-    console.log(`✅ [API GET] Total - ${totalTime.toFixed(2)}ms`);
-
-    if (type === "students") {
-      return NextResponse.json(allData.students);
+    const json = await res.json();
+    for (const doc of json.documents ?? []) {
+      results.push(fromFields(doc.fields ?? {}));
     }
-    if (type === "exams") {
-      return NextResponse.json(allData.exams);
-    }
-    return NextResponse.json(allData);
-  } catch (error) {
-    const elapsed = performance.now() - startTime;
-    console.error(`❌ [API GET] Error after ${elapsed.toFixed(2)}ms:`, error);
-    return NextResponse.json({ students: [], exams: [] });
+    pageToken = json.nextPageToken;
+  } while (pageToken);
+
+  return results;
+}
+
+async function setDoc(collection: string, id: string, data: Record<string, unknown>) {
+  const url = `${BASE}/${collection}/${encodeURIComponent(id)}?key=${FIREBASE_CONFIG.apiKey}`;
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fields: toFields(data) }),
+  });
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Firestore SET ${collection}/${id} ${res.status} ${txt}`);
+  }
+  return res.json();
+}
+
+async function deleteDoc(collection: string, id: string) {
+  const url = `${BASE}/${collection}/${encodeURIComponent(id)}?key=${FIREBASE_CONFIG.apiKey}`;
+  const res = await fetch(url, { method: "DELETE" });
+  if (!res.ok && res.status !== 404) {
+    const txt = await res.text();
+    throw new Error(`Firestore DELETE ${collection}/${id} ${res.status} ${txt}`);
   }
 }
 
+// 학생 삭제 시 해당 학생의 exams도 함께 삭제
+async function deleteStudentCascade(studentId: string) {
+  await deleteDoc("students", studentId);
+  const exams = await listCollection("exams");
+  const targets = exams.filter((e: any) => e?.studentId === studentId);
+  if (targets.length === 0) return;
+  await Promise.all(targets.map((e: any) => deleteDoc("exams", e.id)));
+}
+
+// ─────────────────────────────────────────────
+// 1회 마이그레이션: data/taekwondo 단일 문서 → 컬렉션
+// ─────────────────────────────────────────────
+let migrationAttempted = false;
+
+async function ensureMigrated() {
+  if (migrationAttempted) return;
+  migrationAttempted = true;
+
+  try {
+    // 새 컬렉션에 이미 데이터가 있으면 마이그레이션 불필요
+    const studentsCol = await listCollection("students");
+    if (studentsCol.length > 0) return;
+
+    // 기존 단일 문서 시도
+    const url = `${BASE}/data/taekwondo?key=${FIREBASE_CONFIG.apiKey}`;
+    const res = await fetch(url);
+    if (!res.ok) return;
+    const doc = await res.json();
+    if (!doc?.fields) return;
+
+    const students = (doc.fields.students?.arrayValue?.values ?? []).map(
+      (item: any) => fromFields(item.mapValue?.fields ?? {}),
+    );
+    const exams = (doc.fields.exams?.arrayValue?.values ?? []).map(
+      (item: any) => fromFields(item.mapValue?.fields ?? {}),
+    );
+
+    console.log(
+      `[migration] copying ${students.length} students, ${exams.length} exams to collections`,
+    );
+
+    await Promise.all([
+      ...students
+        .filter((s: any) => s?.id)
+        .map((s: any) => setDoc("students", s.id, s)),
+      ...exams
+        .filter((e: any) => e?.id)
+        .map((e: any) => setDoc("exams", e.id, e)),
+    ]);
+    console.log("[migration] complete");
+  } catch (e) {
+    console.error("[migration] failed:", e);
+    migrationAttempted = false; // 다음 요청에서 다시 시도
+  }
+}
+
+// ─────────────────────────────────────────────
+// Route handlers
+// ─────────────────────────────────────────────
+export async function GET(req: NextRequest) {
+  const t0 = performance.now();
+  const url = new URL(req.url);
+  const type = url.searchParams.get("type");
+
+  try {
+    await ensureMigrated();
+
+    if (type === "students") {
+      const list = await listCollection("students");
+      console.log(
+        `[API GET students] ${list.length} docs · ${(performance.now() - t0).toFixed(0)}ms`,
+      );
+      return NextResponse.json(list);
+    }
+    if (type === "exams") {
+      const list = await listCollection("exams");
+      console.log(
+        `[API GET exams] ${list.length} docs · ${(performance.now() - t0).toFixed(0)}ms`,
+      );
+      return NextResponse.json(list);
+    }
+    const [students, exams] = await Promise.all([
+      listCollection("students"),
+      listCollection("exams"),
+    ]);
+    return NextResponse.json({ students, exams });
+  } catch (e) {
+    console.error("[API GET]", e);
+    return NextResponse.json({ error: String(e) }, { status: 500 });
+  }
+}
+
+// 단건 upsert: PUT /api/storage?type=students&id=xxx
+export async function PUT(req: NextRequest) {
+  const url = new URL(req.url);
+  const type = url.searchParams.get("type");
+  const id = url.searchParams.get("id");
+
+  if (!type || !id || (type !== "students" && type !== "exams")) {
+    return NextResponse.json(
+      { error: "type(students|exams) and id are required" },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const body = await req.json();
+    if (!body || typeof body !== "object" || body.id !== id) {
+      return NextResponse.json(
+        { error: "Body must include matching id" },
+        { status: 400 },
+      );
+    }
+    await setDoc(type, id, body);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error("[API PUT]", e);
+    return NextResponse.json({ error: String(e) }, { status: 500 });
+  }
+}
+
+// 단건 삭제: DELETE /api/storage?type=students&id=xxx
+export async function DELETE(req: NextRequest) {
+  const url = new URL(req.url);
+  const type = url.searchParams.get("type");
+  const id = url.searchParams.get("id");
+
+  if (!type || !id || (type !== "students" && type !== "exams")) {
+    return NextResponse.json(
+      { error: "type(students|exams) and id are required" },
+      { status: 400 },
+    );
+  }
+
+  try {
+    if (type === "students") {
+      await deleteStudentCascade(id);
+    } else {
+      await deleteDoc("exams", id);
+    }
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error("[API DELETE]", e);
+    return NextResponse.json({ error: String(e) }, { status: 500 });
+  }
+}
+
+// 하위 호환: 옛 코드가 POST { type, data: [...] } 보내면 단건 PATCH로 전환
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { type, data: payload } = body;
-
-    if (!type || !payload) {
-      return NextResponse.json(
-        { error: "Missing type or data" },
-        { status: 400 }
-      );
+    const { type, data } = body ?? {};
+    if (
+      !type ||
+      !Array.isArray(data) ||
+      (type !== "students" && type !== "exams")
+    ) {
+      return NextResponse.json({ error: "Invalid bulk payload" }, { status: 400 });
     }
-
-    if (type !== "students" && type !== "exams") {
-      return NextResponse.json({ error: "Invalid type" }, { status: 400 });
-    }
-
-    if (!Array.isArray(payload)) {
-      return NextResponse.json(
-        { error: "Data must be an array" },
-        { status: 400 }
-      );
-    }
-
-    const doc = await getFirestoreDocument("data/taekwondo");
-
-    let currentData: { students: any[]; exams: any[] } = {
-      students: [],
-      exams: [],
-    };
-
-    if (doc && doc.fields) {
-      const students = doc.fields.students?.arrayValue?.values || [];
-      const exams = doc.fields.exams?.arrayValue?.values || [];
-
-      currentData = {
-        students: students.map((item: any) =>
-          convertFromFirestoreFields(item.mapValue?.fields || {})
-        ),
-        exams: exams.map((item: any) =>
-          convertFromFirestoreFields(item.mapValue?.fields || {})
-        ),
-      };
-    }
-
-    // 데이터 업데이트
-    if (type === "students") {
-      currentData.students = payload;
-    } else if (type === "exams") {
-      currentData.exams = payload;
-    }
-
-    // Firestore REST API로 저장
-    await setFirestoreDocument("data/taekwondo", currentData);
-
-    return NextResponse.json({
-      success: true,
-      type,
-      count: payload.length,
-    });
-  } catch (error) {
-    console.error("❌ [API POST] Error:", error);
-    return NextResponse.json(
-      { error: "저장 실패", details: String(error) },
-      { status: 500 }
+    await Promise.all(
+      data.map((item: any) => {
+        if (!item?.id) throw new Error("Each item must have an id");
+        return setDoc(type, item.id, item);
+      }),
     );
+    return NextResponse.json({ ok: true, count: data.length });
+  } catch (e) {
+    console.error("[API POST bulk]", e);
+    return NextResponse.json({ error: String(e) }, { status: 500 });
   }
 }

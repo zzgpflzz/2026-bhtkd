@@ -24,6 +24,7 @@ import {
   newStudentTemplate,
   newExamTemplate,
   getStudentExams,
+  compressImageDataURL,
 } from "../../lib/storage";
 import { GRADES, type Student, type Exam, type Grade } from "../../lib/types";
 import StarRating from "../../components/StarRating";
@@ -539,12 +540,20 @@ function StudentEditModal({
   const update = <K extends keyof Student>(key: K, value: Student[K]) =>
     setForm((p) => ({ ...p, [key]: value }));
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => update("photoUrl", String(reader.result));
-    reader.readAsDataURL(file);
+    try {
+      // 800px 이내 + jpeg 82% 압축 → Firestore 1MB 한도 안전
+      const compressed = await compressImageDataURL(file, 800, 0.82);
+      update("photoUrl", compressed);
+    } catch (err) {
+      console.error("[handlePhotoUpload]", err);
+      alert("사진을 불러오는 중 오류가 발생했습니다.");
+    } finally {
+      // 동일 파일 재선택 가능하도록 input 초기화
+      e.target.value = "";
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
