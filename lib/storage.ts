@@ -52,36 +52,40 @@ export async function loadStudents(force = false): Promise<Student[]> {
 }
 
 export async function upsertStudent(student: Student): Promise<Student[]> {
-  // 1) 캐시 즉시 갱신 (낙관적 업데이트)
+  // 다음 상태 계산 (캐시 기준)
   const base = studentsCache ?? (await loadStudents());
   const next = [...base];
   const idx = next.findIndex((s) => s.id === student.id);
   if (idx >= 0) next[idx] = student;
   else next.push(student);
 
+  // 서버에 저장 — Firestore 응답이 올 때까지 await로 보장
+  let res: Response;
+  try {
+    res = await fetch(
+      `/api/storage?type=students&id=${encodeURIComponent(student.id)}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(student),
+      },
+    );
+  } catch (e) {
+    invalidateStudentsCache();
+    console.error("[upsertStudent] network error", e);
+    throw new Error("학생 저장 실패: 네트워크 오류");
+  }
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    invalidateStudentsCache();
+    console.error("[upsertStudent] HTTP", res.status, txt);
+    throw new Error(`학생 저장 실패 (${res.status})`);
+  }
+
+  // 저장 성공 시에만 캐시 갱신
   studentsCache = next;
   studentsCachedAt = Date.now();
-
-  // 2) 단건 PUT (백그라운드, 실패하면 캐시 무효화 → 다음 요청에서 fresh)
-  void fetch(
-    `/api/storage?type=students&id=${encodeURIComponent(student.id)}`,
-    {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(student),
-    },
-  )
-    .then((res) => {
-      if (!res.ok) {
-        console.error("[upsertStudent] save failed", res.status);
-        invalidateStudentsCache();
-      }
-    })
-    .catch((e) => {
-      console.error("[upsertStudent] network error", e);
-      invalidateStudentsCache();
-    });
-
   return next;
 }
 
@@ -89,30 +93,32 @@ export async function deleteStudent(id: string): Promise<Student[]> {
   const base = studentsCache ?? (await loadStudents());
   const next = base.filter((s) => s.id !== id);
 
+  let res: Response;
+  try {
+    res = await fetch(
+      `/api/storage?type=students&id=${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    );
+  } catch (e) {
+    invalidateStudentsCache();
+    invalidateExamsCache();
+    console.error("[deleteStudent] network error", e);
+    throw new Error("학생 삭제 실패: 네트워크 오류");
+  }
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    invalidateStudentsCache();
+    invalidateExamsCache();
+    console.error("[deleteStudent] HTTP", res.status, txt);
+    throw new Error(`학생 삭제 실패 (${res.status})`);
+  }
+
   studentsCache = next;
   studentsCachedAt = Date.now();
-
-  // 학생의 exams도 캐시에서 cascade 제거 (서버는 자동 cascade)
   if (examsCache) {
     examsCache = examsCache.filter((e) => e.studentId !== id);
   }
-
-  void fetch(`/api/storage?type=students&id=${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  })
-    .then((res) => {
-      if (!res.ok) {
-        console.error("[deleteStudent] failed", res.status);
-        invalidateStudentsCache();
-        invalidateExamsCache();
-      }
-    })
-    .catch((e) => {
-      console.error("[deleteStudent] network error", e);
-      invalidateStudentsCache();
-      invalidateExamsCache();
-    });
-
   return next;
 }
 
@@ -144,25 +150,31 @@ export async function upsertExam(exam: Exam): Promise<Exam[]> {
   if (idx >= 0) next[idx] = exam;
   else next.push(exam);
 
+  let res: Response;
+  try {
+    res = await fetch(
+      `/api/storage?type=exams&id=${encodeURIComponent(exam.id)}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(exam),
+      },
+    );
+  } catch (e) {
+    invalidateExamsCache();
+    console.error("[upsertExam] network error", e);
+    throw new Error("심사 저장 실패: 네트워크 오류");
+  }
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    invalidateExamsCache();
+    console.error("[upsertExam] HTTP", res.status, txt);
+    throw new Error(`심사 저장 실패 (${res.status})`);
+  }
+
   examsCache = next;
   examsCachedAt = Date.now();
-
-  void fetch(`/api/storage?type=exams&id=${encodeURIComponent(exam.id)}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(exam),
-  })
-    .then((res) => {
-      if (!res.ok) {
-        console.error("[upsertExam] failed", res.status);
-        invalidateExamsCache();
-      }
-    })
-    .catch((e) => {
-      console.error("[upsertExam] network error", e);
-      invalidateExamsCache();
-    });
-
   return next;
 }
 
@@ -170,23 +182,26 @@ export async function deleteExam(id: string): Promise<Exam[]> {
   const base = examsCache ?? (await loadExams());
   const next = base.filter((e) => e.id !== id);
 
+  let res: Response;
+  try {
+    res = await fetch(`/api/storage?type=exams&id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+  } catch (e) {
+    invalidateExamsCache();
+    console.error("[deleteExam] network error", e);
+    throw new Error("심사 삭제 실패: 네트워크 오류");
+  }
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    invalidateExamsCache();
+    console.error("[deleteExam] HTTP", res.status, txt);
+    throw new Error(`심사 삭제 실패 (${res.status})`);
+  }
+
   examsCache = next;
   examsCachedAt = Date.now();
-
-  void fetch(`/api/storage?type=exams&id=${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  })
-    .then((res) => {
-      if (!res.ok) {
-        console.error("[deleteExam] failed", res.status);
-        invalidateExamsCache();
-      }
-    })
-    .catch((e) => {
-      console.error("[deleteExam] network error", e);
-      invalidateExamsCache();
-    });
-
   return next;
 }
 

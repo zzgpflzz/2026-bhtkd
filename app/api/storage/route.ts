@@ -205,11 +205,14 @@ export async function GET(req: NextRequest) {
 
 // 단건 upsert: PUT /api/storage?type=students&id=xxx
 export async function PUT(req: NextRequest) {
+  const t0 = performance.now();
   const url = new URL(req.url);
   const type = url.searchParams.get("type");
   const id = url.searchParams.get("id");
+  console.log(`[API PUT] start type=${type} id=${id}`);
 
   if (!type || !id || (type !== "students" && type !== "exams")) {
+    console.warn(`[API PUT] 400 invalid params type=${type} id=${id}`);
     return NextResponse.json(
       { error: "type(students|exams) and id are required" },
       { status: 400 },
@@ -219,26 +222,33 @@ export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
     if (!body || typeof body !== "object" || body.id !== id) {
+      console.warn(`[API PUT] 400 body.id mismatch url=${id} body=${body?.id}`);
       return NextResponse.json(
         { error: "Body must include matching id" },
         { status: 400 },
       );
     }
     await setDoc(type, id, body);
+    console.log(
+      `[API PUT] OK type=${type} id=${id} ${(performance.now() - t0).toFixed(0)}ms`,
+    );
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error("[API PUT]", e);
+    console.error(`[API PUT] FAILED type=${type} id=${id}`, e);
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
 }
 
 // 단건 삭제: DELETE /api/storage?type=students&id=xxx
 export async function DELETE(req: NextRequest) {
+  const t0 = performance.now();
   const url = new URL(req.url);
   const type = url.searchParams.get("type");
   const id = url.searchParams.get("id");
+  console.log(`[API DELETE] start type=${type} id=${id}`);
 
   if (!type || !id || (type !== "students" && type !== "exams")) {
+    console.warn(`[API DELETE] 400 invalid params type=${type} id=${id}`);
     return NextResponse.json(
       { error: "type(students|exams) and id are required" },
       { status: 400 },
@@ -251,9 +261,12 @@ export async function DELETE(req: NextRequest) {
     } else {
       await deleteDoc("exams", id);
     }
+    console.log(
+      `[API DELETE] OK type=${type} id=${id} ${(performance.now() - t0).toFixed(0)}ms`,
+    );
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error("[API DELETE]", e);
+    console.error(`[API DELETE] FAILED type=${type} id=${id}`, e);
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
 }
