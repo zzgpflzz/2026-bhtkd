@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import {
   loadStudents,
-  loadExams,
   upsertStudent,
   deleteStudent,
   upsertExam,
@@ -36,6 +35,7 @@ export default function AdminPage() {
   const [pw, setPw] = useState("");
   const [pwError, setPwError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(false);
 
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState("");
@@ -55,14 +55,16 @@ export default function AdminPage() {
   useEffect(() => {
     if (authed) {
       (async () => {
+        setDataLoading(true);
         const startTime = performance.now();
         console.log("🔍 [Admin Page] Loading students...");
 
         const list = await loadStudents();
         setStudents(list || []);
+        setDataLoading(false);
 
         const elapsed = performance.now() - startTime;
-        console.log(`✅ [Admin Page] Students loaded and rendered - ${elapsed.toFixed(2)}ms`);
+        console.log(`✅ [Admin Page] Students loaded - ${elapsed.toFixed(2)}ms`);
       })();
     }
   }, [authed]);
@@ -244,92 +246,129 @@ export default function AdminPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8 sm:py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* 좌측: 학생 리스트 */}
-          <div className="lg:col-span-1">
-            <div className="border border-line mb-4">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-line">
-                <Search size={16} className="text-muted" strokeWidth={1.5} />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="이름으로 검색"
-                  className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted"
-                />
-              </div>
-              <div className="max-h-[calc(100vh-280px)] overflow-y-auto">
-                {filtered.length === 0 ? (
-                  <div className="p-8 text-center text-muted text-sm">
-                    {students.length === 0
-                      ? "아직 등록된 학생이 없습니다. 새 학생을 추가해주세요."
-                      : "검색 결과가 없습니다."}
-                  </div>
-                ) : (
-                  filtered.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => setSelectedStudent(s)}
-                      className={`w-full p-4 border-b border-line last:border-b-0 text-left hover:bg-line-soft transition ${
-                        selectedStudent?.id === s.id ? "bg-line-soft" : ""
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 border border-line overflow-hidden flex items-center justify-center shrink-0">
-                          {s.photoUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={s.photoUrl}
-                              alt={s.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <ImageIcon
-                              size={16}
-                              strokeWidth={1.5}
-                              className="text-line"
-                            />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-ink text-sm">
-                            {s.name}
-                          </div>
-                          <div className="text-xs text-muted">{s.birthDate}</div>
-                        </div>
+        {dataLoading ? (
+          // 스켈레톤 로딩 UI
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 좌측 스켈레톤 */}
+            <div className="lg:col-span-1">
+              <div className="border border-line mb-4">
+                <div className="px-4 py-3 border-b border-line">
+                  <div className="h-5 bg-line-soft animate-pulse rounded"></div>
+                </div>
+                <div className="p-4 space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-line-soft animate-pulse"></div>
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-line-soft animate-pulse rounded w-3/4"></div>
+                        <div className="h-3 bg-line-soft animate-pulse rounded w-1/2"></div>
                       </div>
-                    </button>
-                  ))
-                )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="w-full h-11 bg-line-soft animate-pulse"></div>
+            </div>
+            {/* 우측 스켈레톤 */}
+            <div className="lg:col-span-2">
+              <div className="border border-line p-6">
+                <div className="h-6 bg-line-soft animate-pulse rounded w-1/3 mb-4"></div>
+                <div className="space-y-3">
+                  <div className="h-4 bg-line-soft animate-pulse rounded"></div>
+                  <div className="h-4 bg-line-soft animate-pulse rounded w-5/6"></div>
+                  <div className="h-4 bg-line-soft animate-pulse rounded w-4/6"></div>
+                </div>
               </div>
             </div>
-            <button
-              onClick={() => setEditingStudent(newStudentTemplate())}
-              className="w-full bg-ink hover:bg-ink/85 text-paper font-semibold py-3 inline-flex items-center justify-center gap-2 transition"
-            >
-              <Plus size={16} /> 새 학생 추가
-            </button>
           </div>
-
-          {/* 우측: 학생 상세 & 심사 이력 */}
-          <div className="lg:col-span-2">
-            {selectedStudent ? (
-              <StudentDetail
-                student={selectedStudent}
-                onEditStudent={() => setEditingStudent({ ...selectedStudent })}
-                onDeleteStudent={handleDeleteStudent}
-                onAddExam={() =>
-                  setEditingExam(newExamTemplate(selectedStudent.id))
-                }
-                onEditExam={(exam) => setEditingExam({ ...exam })}
-                onDeleteExam={handleDeleteExam}
-              />
-            ) : (
-              <div className="border border-line p-10 text-center text-muted">
-                좌측에서 학생을 선택하세요.
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 좌측: 학생 리스트 */}
+            <div className="lg:col-span-1">
+              <div className="border border-line mb-4">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-line">
+                  <Search size={16} className="text-muted" strokeWidth={1.5} />
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="이름으로 검색"
+                    className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted"
+                  />
+                </div>
+                <div className="max-h-[calc(100vh-280px)] overflow-y-auto">
+                  {filtered.length === 0 ? (
+                    <div className="p-8 text-center text-muted text-sm">
+                      {students.length === 0
+                        ? "아직 등록된 학생이 없습니다. 새 학생을 추가해주세요."
+                        : "검색 결과가 없습니다."}
+                    </div>
+                  ) : (
+                    filtered.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => setSelectedStudent(s)}
+                        className={`w-full p-4 border-b border-line last:border-b-0 text-left hover:bg-line-soft transition ${
+                          selectedStudent?.id === s.id ? "bg-line-soft" : ""
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 border border-line overflow-hidden flex items-center justify-center shrink-0">
+                            {s.photoUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={s.photoUrl}
+                                alt={s.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <ImageIcon
+                                size={16}
+                                strokeWidth={1.5}
+                                className="text-line"
+                              />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-ink text-sm">
+                              {s.name}
+                            </div>
+                            <div className="text-xs text-muted">{s.birthDate}</div>
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
-            )}
+              <button
+                onClick={() => setEditingStudent(newStudentTemplate())}
+                className="w-full bg-ink hover:bg-ink/85 text-paper font-semibold py-3 inline-flex items-center justify-center gap-2 transition"
+              >
+                <Plus size={16} /> 새 학생 추가
+              </button>
+            </div>
+
+            {/* 우측: 학생 상세 & 심사 이력 */}
+            <div className="lg:col-span-2">
+              {selectedStudent ? (
+                <StudentDetail
+                  student={selectedStudent}
+                  onEditStudent={() => setEditingStudent({ ...selectedStudent })}
+                  onDeleteStudent={handleDeleteStudent}
+                  onAddExam={() =>
+                    setEditingExam(newExamTemplate(selectedStudent.id))
+                  }
+                  onEditExam={(exam) => setEditingExam({ ...exam })}
+                  onDeleteExam={handleDeleteExam}
+                />
+              ) : (
+                <div className="border border-line p-10 text-center text-muted">
+                  좌측에서 학생을 선택하세요.
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* 학생 편집 모달 */}

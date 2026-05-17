@@ -38,7 +38,9 @@ export async function loadStudents(force = false): Promise<Student[]> {
     return studentsCache;
   }
   try {
-    const res = await fetch("/api/storage?type=students", { cache: "no-store" });
+    const res = await fetch("/api/storage?type=students", {
+      next: { revalidate: 5 }, // 5초 동안 캐시된 데이터 사용
+    });
     if (!res.ok) return studentsCache ?? [];
     const data = await res.json();
     const list = Array.isArray(data) ? (data as Student[]) : [];
@@ -130,7 +132,9 @@ export async function loadExams(force = false): Promise<Exam[]> {
     return examsCache;
   }
   try {
-    const res = await fetch("/api/storage?type=exams", { cache: "no-store" });
+    const res = await fetch("/api/storage?type=exams", {
+      next: { revalidate: 5 }, // 5초 동안 캐시된 데이터 사용
+    });
     if (!res.ok) return examsCache ?? [];
     const data = await res.json();
     const list = Array.isArray(data) ? (data as Exam[]) : [];
