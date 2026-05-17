@@ -41,6 +41,20 @@ const config: Config = {
         md: "6px",
         lg: "8px",
       },
+      animation: {
+        shimmer: "shimmer 2s ease-in-out infinite",
+        "fade-in": "fade-in 0.3s ease-out",
+      },
+      keyframes: {
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+      },
     },
   },
   plugins: [],

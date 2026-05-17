@@ -93,71 +93,102 @@ export default function AdminPage() {
   );
 
   const handleSaveStudent = async (s: Student) => {
+    // 🚀 낙관적 업데이트: 먼저 UI를 즉시 업데이트
+    const prevStudents = [...students];
+    const idx = students.findIndex((st) => st.id === s.id);
+    const optimisticList = idx >= 0
+      ? students.map((st) => (st.id === s.id ? s : st))
+      : [...students, s];
+
+    setStudents(optimisticList);
+    setEditingStudent(null);
+    if (selectedStudent?.id === s.id) {
+      setSelectedStudent(s);
+    }
+
+    // 백그라운드에서 서버 저장
     try {
       const updatedList = await upsertStudent(s);
-
       if (Array.isArray(updatedList)) {
         setStudents(updatedList);
-      } else {
-        setStudents([]);
-      }
-
-      setEditingStudent(null);
-      if (selectedStudent?.id === s.id) {
-        setSelectedStudent(s);
       }
     } catch (error) {
       console.error("❌ Save student error:", error);
+      // 실패 시 롤백
+      setStudents(prevStudents);
+      alert("학생 저장에 실패했습니다: " + String(error));
     }
   };
 
   const handleDeleteStudent = async (id: string) => {
     if (!confirm("정말 삭제하시겠습니까? 모든 심사 기록도 함께 삭제됩니다.")) return;
 
+    // 🚀 낙관적 업데이트: UI에서 먼저 제거
+    const prevStudents = [...students];
+    const optimisticList = students.filter((s) => s.id !== id);
+
+    setStudents(optimisticList);
+    if (selectedStudent?.id === id) {
+      setSelectedStudent(null);
+    }
+
+    // 백그라운드에서 서버 삭제
     try {
       const updatedList = await deleteStudent(id);
-
       if (Array.isArray(updatedList)) {
         setStudents(updatedList);
-      } else {
-        setStudents([]);
-      }
-
-      if (selectedStudent?.id === id) {
-        setSelectedStudent(null);
       }
     } catch (error) {
       console.error("❌ Delete student error:", error);
+      // 실패 시 롤백
+      setStudents(prevStudents);
+      alert("학생 삭제에 실패했습니다: " + String(error));
     }
   };
 
   const handleSaveExam = async (e: Exam) => {
+    // 🚀 낙관적 업데이트: 모달 즉시 닫기
+    setEditingExam(null);
+
+    // 선택된 학생 강제 리렌더링 (StudentDetail에서 exams 새로고침)
+    if (selectedStudent) {
+      setSelectedStudent({ ...selectedStudent });
+    }
+
+    // 백그라운드에서 서버 저장
     try {
       await upsertExam(e);
-      setEditingExam(null);
-
-      // 선택된 학생의 심사 기록을 새로고침
+    } catch (error) {
+      console.error("❌ Save exam error:", error);
+      alert("심사 저장에 실패했습니다: " + String(error));
+      // 재로드로 복구
       if (selectedStudent) {
         setSelectedStudent({ ...selectedStudent });
       }
-    } catch (error) {
-      console.error("❌ Save exam error:", error);
     }
   };
 
   const handleDeleteExam = async (id: string) => {
     if (!confirm("이 심사 기록을 삭제하시겠습니까?")) return;
 
+    // 🚀 낙관적 업데이트: 모달 즉시 닫기
+    setEditingExam(null);
+
+    // 선택된 학생 강제 리렌더링 (StudentDetail에서 exams 새로고침)
+    if (selectedStudent) {
+      setSelectedStudent({ ...selectedStudent });
+    }
+
+    // 백그라운드에서 서버 삭제
     try {
       await deleteExam(id);
-      setEditingExam(null);
-
-      // 선택된 학생의 심사 기록을 새로고침
+    } catch (error) {
+      console.error("❌ Delete exam error:", error);
+      alert("심사 삭제에 실패했습니다: " + String(error));
+      // 재로드로 복구
       if (selectedStudent) {
         setSelectedStudent({ ...selectedStudent });
       }
-    } catch (error) {
-      console.error("❌ Delete exam error:", error);
     }
   };
 
@@ -249,38 +280,52 @@ export default function AdminPage() {
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8 sm:py-10">
         {dataLoading ? (
-          // 스켈레톤 로딩 UI
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          // 🎨 향상된 스켈레톤 로딩 UI
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
             {/* 좌측 스켈레톤 */}
             <div className="lg:col-span-1">
-              <div className="border border-line mb-4">
+              <div className="border border-line mb-4 bg-white">
                 <div className="px-4 py-3 border-b border-line">
-                  <div className="h-5 bg-line-soft animate-pulse rounded"></div>
+                  <div className="h-5 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded"></div>
                 </div>
                 <div className="p-4 space-y-4">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-line-soft animate-pulse"></div>
+                  {[...Array(6)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-3"
+                      style={{ animationDelay: `${i * 100}ms` }}
+                    >
+                      <div className="w-10 h-10 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded"></div>
                       <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-line-soft animate-pulse rounded w-3/4"></div>
-                        <div className="h-3 bg-line-soft animate-pulse rounded w-1/2"></div>
+                        <div className="h-4 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded w-3/4"></div>
+                        <div className="h-3 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded w-1/2"></div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="w-full h-11 bg-line-soft animate-pulse"></div>
+              <div className="w-full h-11 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded"></div>
             </div>
             {/* 우측 스켈레톤 */}
             <div className="lg:col-span-2">
-              <div className="border border-line p-6">
-                <div className="h-6 bg-line-soft animate-pulse rounded w-1/3 mb-4"></div>
+              <div className="border border-line p-6 bg-white space-y-6">
                 <div className="space-y-3">
-                  <div className="h-4 bg-line-soft animate-pulse rounded"></div>
-                  <div className="h-4 bg-line-soft animate-pulse rounded w-5/6"></div>
-                  <div className="h-4 bg-line-soft animate-pulse rounded w-4/6"></div>
+                  <div className="h-6 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded w-1/3"></div>
+                  <div className="h-4 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded"></div>
+                  <div className="h-4 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded w-5/6"></div>
+                  <div className="h-4 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded w-4/6"></div>
+                </div>
+                <div className="border-t border-line pt-4 space-y-2">
+                  <div className="h-5 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded w-1/4"></div>
+                  <div className="h-3 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded w-full"></div>
+                  <div className="h-3 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded w-4/5"></div>
                 </div>
               </div>
+            </div>
+
+            {/* 로딩 중 메시지 */}
+            <div className="lg:col-span-3 text-center">
+              <p className="text-xs text-muted animate-pulse">학생 데이터를 불러오는 중...</p>
             </div>
           </div>
         ) : (
