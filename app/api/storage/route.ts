@@ -1,127 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
-
-// ─────────────────────────────────────────────
-// Firestore REST API 설정
-// ─────────────────────────────────────────────
-const FIREBASE_CONFIG = {
-  projectId: "bhtkd-37f39",
-  apiKey: "AIzaSyCM9Ph-47dtlMjLSordkd8ptz8mQsN6b7s",
-};
-
-const BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents`;
+import { getAdminDb } from "@/lib/firebase-admin";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs"; // firebase-admin은 Node.js 런타임 필요
+
+type Collection = "students" | "exams";
 
 // ─────────────────────────────────────────────
-// JavaScript ↔ Firestore 필드 변환
+// Firestore Admin SDK 헬퍼
 // ─────────────────────────────────────────────
-function toValue(v: unknown): any {
-  if (v === null || v === undefined) return { nullValue: null };
-  if (typeof v === "string") return { stringValue: v };
-  if (typeof v === "boolean") return { booleanValue: v };
-  if (typeof v === "number") {
-    return Number.isInteger(v)
-      ? { integerValue: String(v) }
-      : { doubleValue: v };
-  }
-  if (Array.isArray(v)) {
-    return { arrayValue: { values: v.map(toValue) } };
-  }
-  if (typeof v === "object") {
-    return { mapValue: { fields: toFields(v as Record<string, unknown>) } };
-  }
-  return { stringValue: String(v) };
+async function listCollection(name: Collection): Promise<unknown[]> {
+  const db = getAdminDb();
+  const snap = await db.collection(name).get();
+  return snap.docs.map((d) => d.data());
 }
 
-function toFields(obj: Record<string, unknown>): Record<string, any> {
-  const fields: Record<string, any> = {};
-  for (const [k, v] of Object.entries(obj)) fields[k] = toValue(v);
-  return fields;
+async function setDoc(name: Collection, id: string, data: Record<string, unknown>) {
+  const db = getAdminDb();
+  await db.collection(name).doc(id).set(data, { merge: false });
 }
 
-function fromValue(v: any): any {
-  if (v == null) return null;
-  if (v.stringValue !== undefined) return v.stringValue;
-  if (v.integerValue !== undefined) return parseInt(v.integerValue, 10);
-  if (v.doubleValue !== undefined) return v.doubleValue;
-  if (v.booleanValue !== undefined) return v.booleanValue;
-  if (v.nullValue !== undefined) return null;
-  if (v.mapValue) return fromFields(v.mapValue.fields ?? {});
-  if (v.arrayValue) {
-    return (v.arrayValue.values ?? []).map((item: any) => fromValue(item));
-  }
-  return null;
+async function deleteDoc(name: Collection, id: string) {
+  const db = getAdminDb();
+  await db.collection(name).doc(id).delete();
 }
 
-function fromFields(fields: Record<string, any>): Record<string, any> {
-  const obj: Record<string, any> = {};
-  for (const [k, v] of Object.entries(fields ?? {})) obj[k] = fromValue(v);
-  return obj;
-}
-
-// ─────────────────────────────────────────────
-// 컬렉션 단위 헬퍼
-// ─────────────────────────────────────────────
-async function listCollection(collection: string): Promise<any[]> {
-  const results: any[] = [];
-  let pageToken: string | undefined;
-
-  do {
-    const url = new URL(`${BASE}/${collection}`);
-    url.searchParams.set("key", FIREBASE_CONFIG.apiKey);
-    url.searchParams.set("pageSize", "300");
-    if (pageToken) url.searchParams.set("pageToken", pageToken);
-
-    const res = await fetch(url.toString(), { cache: "no-store" });
-    if (res.status === 404) return results; // 컬렉션 없음 = 빈 배열
-    if (!res.ok) {
-      const txt = await res.text();
-      throw new Error(`Firestore LIST ${collection} ${res.status} ${txt}`);
-    }
-    const json = await res.json();
-    for (const doc of json.documents ?? []) {
-      results.push(fromFields(doc.fields ?? {}));
-    }
-    pageToken = json.nextPageToken;
-  } while (pageToken);
-
-  return results;
-}
-
-async function setDoc(collection: string, id: string, data: Record<string, unknown>) {
-  const url = `${BASE}/${collection}/${encodeURIComponent(id)}?key=${FIREBASE_CONFIG.apiKey}`;
-  const res = await fetch(url, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fields: toFields(data) }),
-  });
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(`Firestore SET ${collection}/${id} ${res.status} ${txt}`);
-  }
-  return res.json();
-}
-
-async function deleteDoc(collection: string, id: string) {
-  const url = `${BASE}/${collection}/${encodeURIComponent(id)}?key=${FIREBASE_CONFIG.apiKey}`;
-  const res = await fetch(url, { method: "DELETE" });
-  if (!res.ok && res.status !== 404) {
-    const txt = await res.text();
-    throw new Error(`Firestore DELETE ${collection}/${id} ${res.status} ${txt}`);
-  }
-}
-
-// 학생 삭제 시 해당 학생의 exams도 함께 삭제
+// 학생 삭제 시 해당 학생의 모든 exam도 같이 삭제
 async function deleteStudentCascade(studentId: string) {
-  await deleteDoc("students", studentId);
-  const exams = await listCollection("exams");
-  const targets = exams.filter((e: any) => e?.studentId === studentId);
-  if (targets.length === 0) return;
-  await Promise.all(targets.map((e: any) => deleteDoc("exams", e.id)));
+  const db = getAdminDb();
+  await db.collection("students").doc(studentId).delete();
+
+  const examsSnap = await db
+    .collection("exams")
+    .where("studentId", "==", studentId)
+    .get();
+  if (examsSnap.empty) return;
+
+  const batch = db.batch();
+  examsSnap.docs.forEach((d) => batch.delete(d.ref));
+  await batch.commit();
 }
 
 // ─────────────────────────────────────────────
-// 1회 마이그레이션: data/taekwondo 단일 문서 → 컬렉션
+// 1회 자동 마이그레이션
+// 옛 단일 문서 data/taekwondo → students/{id}, exams/{id} 컬렉션
 // ─────────────────────────────────────────────
 let migrationAttempted = false;
 
@@ -130,40 +52,41 @@ async function ensureMigrated() {
   migrationAttempted = true;
 
   try {
-    // 새 컬렉션에 이미 데이터가 있으면 마이그레이션 불필요
-    const studentsCol = await listCollection("students");
-    if (studentsCol.length > 0) return;
+    const db = getAdminDb();
+    const studentsSnap = await db.collection("students").limit(1).get();
+    if (!studentsSnap.empty) return; // 이미 컬렉션에 데이터 있음
 
-    // 기존 단일 문서 시도
-    const url = `${BASE}/data/taekwondo?key=${FIREBASE_CONFIG.apiKey}`;
-    const res = await fetch(url);
-    if (!res.ok) return;
-    const doc = await res.json();
-    if (!doc?.fields) return;
-
-    const students = (doc.fields.students?.arrayValue?.values ?? []).map(
-      (item: any) => fromFields(item.mapValue?.fields ?? {}),
-    );
-    const exams = (doc.fields.exams?.arrayValue?.values ?? []).map(
-      (item: any) => fromFields(item.mapValue?.fields ?? {}),
-    );
+    const legacyDoc = await db.collection("data").doc("taekwondo").get();
+    if (!legacyDoc.exists) return; // 옛 문서도 없음 — 신규 설치
+    const data = legacyDoc.data() ?? {};
+    const students = Array.isArray(data.students) ? data.students : [];
+    const exams = Array.isArray(data.exams) ? data.exams : [];
+    if (students.length === 0 && exams.length === 0) return;
 
     console.log(
-      `[migration] copying ${students.length} students, ${exams.length} exams to collections`,
+      `[migration] copying ${students.length} students, ${exams.length} exams`,
     );
 
-    await Promise.all([
+    // Firestore batch는 500 작업 제한이 있어서 분할
+    const all = [
       ...students
         .filter((s: any) => s?.id)
-        .map((s: any) => setDoc("students", s.id, s)),
+        .map((s: any) => ({ col: "students" as const, id: s.id as string, data: s })),
       ...exams
         .filter((e: any) => e?.id)
-        .map((e: any) => setDoc("exams", e.id, e)),
-    ]);
+        .map((e: any) => ({ col: "exams" as const, id: e.id as string, data: e })),
+    ];
+    for (let i = 0; i < all.length; i += 400) {
+      const batch = db.batch();
+      for (const op of all.slice(i, i + 400)) {
+        batch.set(db.collection(op.col).doc(op.id), op.data);
+      }
+      await batch.commit();
+    }
     console.log("[migration] complete");
   } catch (e) {
     console.error("[migration] failed:", e);
-    migrationAttempted = false; // 다음 요청에서 다시 시도
+    migrationAttempted = false; // 다음 요청에서 재시도
   }
 }
 
@@ -178,17 +101,10 @@ export async function GET(req: NextRequest) {
   try {
     await ensureMigrated();
 
-    if (type === "students") {
-      const list = await listCollection("students");
+    if (type === "students" || type === "exams") {
+      const list = await listCollection(type as Collection);
       console.log(
-        `[API GET students] ${list.length} docs · ${(performance.now() - t0).toFixed(0)}ms`,
-      );
-      return NextResponse.json(list);
-    }
-    if (type === "exams") {
-      const list = await listCollection("exams");
-      console.log(
-        `[API GET exams] ${list.length} docs · ${(performance.now() - t0).toFixed(0)}ms`,
+        `[API GET ${type}] ${list.length} docs · ${(performance.now() - t0).toFixed(0)}ms`,
       );
       return NextResponse.json(list);
     }
@@ -228,7 +144,7 @@ export async function PUT(req: NextRequest) {
         { status: 400 },
       );
     }
-    await setDoc(type, id, body);
+    await setDoc(type as Collection, id, body);
     console.log(
       `[API PUT] OK type=${type} id=${id} ${(performance.now() - t0).toFixed(0)}ms`,
     );
@@ -271,7 +187,7 @@ export async function DELETE(req: NextRequest) {
   }
 }
 
-// 하위 호환: 옛 코드가 POST { type, data: [...] } 보내면 단건 PATCH로 전환
+// 하위 호환: 옛 코드가 POST { type, data: [...] } 보내면 batch로 일괄 set
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -283,12 +199,15 @@ export async function POST(req: NextRequest) {
     ) {
       return NextResponse.json({ error: "Invalid bulk payload" }, { status: 400 });
     }
-    await Promise.all(
-      data.map((item: any) => {
+    const db = getAdminDb();
+    for (let i = 0; i < data.length; i += 400) {
+      const batch = db.batch();
+      for (const item of data.slice(i, i + 400)) {
         if (!item?.id) throw new Error("Each item must have an id");
-        return setDoc(type, item.id, item);
-      }),
-    );
+        batch.set(db.collection(type as Collection).doc(item.id), item);
+      }
+      await batch.commit();
+    }
     return NextResponse.json({ ok: true, count: data.length });
   } catch (e) {
     console.error("[API POST bulk]", e);

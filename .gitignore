@@ -7,3 +7,4 @@ build/
 .env*.local
 data/*.json
 .claude/
+.DS_Store
