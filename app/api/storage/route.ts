@@ -104,7 +104,6 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const type = url.searchParams.get("type");
   const id = url.searchParams.get("id");
-  const lightweight = url.searchParams.get("lightweight") === "true";
 
   try {
     await ensureMigrated();
@@ -120,22 +119,9 @@ export async function GET(req: NextRequest) {
 
     // 컬렉션 전체 조회
     if (type === "students" || type === "exams") {
-      let list = await listCollection(type as Collection);
-
-      // 경량화 모드: students 사진 제거 (리스트 뷰용)
-      if (lightweight && type === "students") {
-        list = list.map((student: any) => ({
-          id: student.id,
-          name: student.name,
-          birthDate: student.birthDate,
-          googleLink: student.googleLink,
-          isEnglishName: student.isEnglishName,
-          // photoUrl 제외
-        }));
-      }
-
+      const list = await listCollection(type as Collection);
       console.log(
-        `[API GET ${type}${lightweight ? " (lightweight)" : ""}] ${list.length} docs · ${(performance.now() - t0).toFixed(0)}ms`,
+        `[API GET ${type}] ${list.length} docs · ${(performance.now() - t0).toFixed(0)}ms`,
       );
       return NextResponse.json(list);
     }

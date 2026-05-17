@@ -25,6 +25,7 @@ import {
   newExamTemplate,
   getStudentExams,
   compressImageDataURL,
+  uploadImageToStorage,
 } from "../../lib/storage";
 import { GRADES, type Student, type Exam, type Grade } from "../../lib/types";
 import StarRating from "../../components/StarRating";
@@ -58,10 +59,9 @@ export default function AdminPage() {
       (async () => {
         setDataLoading(true);
         const startTime = performance.now();
-        console.log("🔍 [Admin Page] Loading students (lightweight mode)...");
+        console.log("🔍 [Admin Page] Loading students...");
 
-        // lightweight=true: 사진 제외, 리스트만 빠르게 로드
-        const list = await loadStudents(false, true);
+        const list = await loadStudents();
         setStudents(list || []);
         setDataLoading(false);
 
@@ -414,26 +414,19 @@ function StudentDetail({
   onDeleteExam: (id: string) => Promise<void>;
 }) {
   const [exams, setExams] = useState<Exam[]>([]);
-  const [fullStudent, setFullStudent] = useState<Student>(student);
 
   useEffect(() => {
     (async () => {
       const startTime = performance.now();
-      console.log(`🔍 [StudentDetail] Loading full data for ${student.name}...`);
+      console.log(`🔍 [StudentDetail] Loading exams for ${student.name}...`);
 
-      // 사진 포함한 전체 학생 정보와 심사 기록을 병렬로 로드
-      const [studentData, examList] = await Promise.all([
-        findStudent(student.id),
-        getStudentExams(student.id),
-      ]);
-
-      if (studentData) setFullStudent(studentData);
+      const examList = await getStudentExams(student.id);
       setExams(examList || []);
 
       const elapsed = performance.now() - startTime;
-      console.log(`✅ [StudentDetail] Full data loaded - ${elapsed.toFixed(2)}ms`);
+      console.log(`✅ [StudentDetail] Exams loaded - ${elapsed.toFixed(2)}ms`);
     })();
-  }, [student.id]);
+  }, [student.id, student]);
 
   return (
     <div className="space-y-4">
@@ -458,11 +451,11 @@ function StudentDetail({
         </div>
         <div className="flex gap-6">
           <div className="w-20 h-20 border border-line overflow-hidden flex items-center justify-center shrink-0">
-            {fullStudent.photoUrl ? (
+            {student.photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={fullStudent.photoUrl}
-                alt={fullStudent.name}
+                src={student.photoUrl}
+                alt={student.name}
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -472,17 +465,17 @@ function StudentDetail({
           <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <div>
               <span className="text-muted">이름:</span>{" "}
-              <span className="text-ink font-medium">{fullStudent.name}</span>
+              <span className="text-ink font-medium">{student.name}</span>
             </div>
             <div>
               <span className="text-muted">생년월일:</span>{" "}
-              <span className="text-ink">{fullStudent.birthDate}</span>
+              <span className="text-ink">{student.birthDate}</span>
             </div>
-            {fullStudent.googleLink && (
+            {student.googleLink && (
               <div className="col-span-2">
                 <span className="text-muted">리포트:</span>{" "}
                 <a
-                  href={fullStudent.googleLink}
+                  href={student.googleLink}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-point underline text-xs"
@@ -495,7 +488,7 @@ function StudentDetail({
         </div>
         <div className="mt-4 pt-4 border-t border-line">
           <a
-            href={`/student/${fullStudent.id}`}
+            href={`/student/${student.id}`}
             target="_blank"
             className="text-xs px-4 py-2 border border-line text-ink-soft hover:border-ink hover:text-ink inline-flex items-center gap-1 transition"
           >
@@ -584,6 +577,7 @@ function StudentEditModal({
   onSave: (s: Student) => Promise<void>;
 }) {
   const [form, setForm] = useState<Student>(student);
+  const [uploading, setUploading] = useState(false);
 
   const update = <K extends keyof Student>(key: K, value: Student[K]) =>
     setForm((p) => ({ ...p, [key]: value }));
@@ -591,14 +585,23 @@ function StudentEditModal({
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    setUploading(true);
     try {
-      // 800px 이내 + jpeg 82% 압축 → Firestore 1MB 한도 안전
+      // 1. 이미지 압축 (800px, jpeg 82%)
       const compressed = await compressImageDataURL(file, 800, 0.82);
-      update("photoUrl", compressed);
+
+      // 2. Firebase Storage에 업로드하고 public URL 받기
+      const publicUrl = await uploadImageToStorage(compressed, form.id);
+
+      // 3. photoUrl을 public URL로 설정
+      update("photoUrl", publicUrl);
+      alert("사진이 업로드되었습니다!");
     } catch (err) {
       console.error("[handlePhotoUpload]", err);
-      alert("사진을 불러오는 중 오류가 발생했습니다.");
+      alert("사진 업로드 중 오류가 발생했습니다: " + String(err));
     } finally {
+      setUploading(false);
       // 동일 파일 재선택 가능하도록 input 초기화
       e.target.value = "";
     }
@@ -700,9 +703,13 @@ function StudentEditModal({
                 type="file"
                 accept="image/*"
                 onChange={handlePhotoUpload}
+                disabled={uploading}
                 className="text-sm"
               />
-              {form.photoUrl && (
+              {uploading && (
+                <span className="text-xs text-muted">업로드 중...</span>
+              )}
+              {form.photoUrl && !uploading && (
                 <button
                   type="button"
                   onClick={() => update("photoUrl", "")}
@@ -712,6 +719,9 @@ function StudentEditModal({
                 </button>
               )}
             </div>
+            <p className="text-xs text-muted mt-1.5">
+              사진은 Firebase Storage에 저장되며 public URL로 관리됩니다
+            </p>
           </Field>
 
           <Field label="구글 리포트 링크 (선택)">

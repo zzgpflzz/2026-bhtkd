@@ -29,7 +29,7 @@ function invalidateExamsCache() {
 // ─────────────────────────────────────────────
 // 학생
 // ─────────────────────────────────────────────
-export async function loadStudents(force = false, lightweight = false): Promise<Student[]> {
+export async function loadStudents(force = false): Promise<Student[]> {
   if (
     !force &&
     studentsCache !== null &&
@@ -38,20 +38,14 @@ export async function loadStudents(force = false, lightweight = false): Promise<
     return studentsCache;
   }
   try {
-    const url = `/api/storage?type=students${lightweight ? "&lightweight=true" : ""}`;
-    const res = await fetch(url, {
+    const res = await fetch("/api/storage?type=students", {
       next: { revalidate: 5 }, // 5초 동안 캐시된 데이터 사용
     });
     if (!res.ok) return studentsCache ?? [];
     const data = await res.json();
     const list = Array.isArray(data) ? (data as Student[]) : [];
-
-    // lightweight 모드가 아닐 때만 캐시 갱신 (전체 데이터)
-    if (!lightweight) {
-      studentsCache = list;
-      studentsCachedAt = Date.now();
-    }
-
+    studentsCache = list;
+    studentsCachedAt = Date.now();
     return list;
   } catch (e) {
     console.error("[loadStudents]", e);
@@ -320,4 +314,26 @@ export async function compressImageDataURL(
     };
     reader.readAsDataURL(file);
   });
+}
+
+// ─────────────────────────────────────────────
+// Firebase Storage에 이미지 업로드 (base64 → public URL)
+// ─────────────────────────────────────────────
+export async function uploadImageToStorage(
+  dataUrl: string,
+  studentId: string,
+): Promise<string> {
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ dataUrl, studentId }),
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(`이미지 업로드 실패: ${error}`);
+  }
+
+  const data = await res.json();
+  return data.url;
 }
