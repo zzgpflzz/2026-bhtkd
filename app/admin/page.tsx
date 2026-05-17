@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import {
   loadStudents,
+  findStudent,
   upsertStudent,
   deleteStudent,
   upsertExam,
@@ -57,9 +58,10 @@ export default function AdminPage() {
       (async () => {
         setDataLoading(true);
         const startTime = performance.now();
-        console.log("🔍 [Admin Page] Loading students...");
+        console.log("🔍 [Admin Page] Loading students (lightweight mode)...");
 
-        const list = await loadStudents();
+        // lightweight=true: 사진 제외, 리스트만 빠르게 로드
+        const list = await loadStudents(false, true);
         setStudents(list || []);
         setDataLoading(false);
 
@@ -412,19 +414,26 @@ function StudentDetail({
   onDeleteExam: (id: string) => Promise<void>;
 }) {
   const [exams, setExams] = useState<Exam[]>([]);
+  const [fullStudent, setFullStudent] = useState<Student>(student);
 
   useEffect(() => {
     (async () => {
       const startTime = performance.now();
-      console.log(`🔍 [StudentDetail] Loading exams for ${student.name}...`);
+      console.log(`🔍 [StudentDetail] Loading full data for ${student.name}...`);
 
-      const list = await getStudentExams(student.id);
-      setExams(list || []);
+      // 사진 포함한 전체 학생 정보와 심사 기록을 병렬로 로드
+      const [studentData, examList] = await Promise.all([
+        findStudent(student.id),
+        getStudentExams(student.id),
+      ]);
+
+      if (studentData) setFullStudent(studentData);
+      setExams(examList || []);
 
       const elapsed = performance.now() - startTime;
-      console.log(`✅ [StudentDetail] Exams loaded and rendered - ${elapsed.toFixed(2)}ms`);
+      console.log(`✅ [StudentDetail] Full data loaded - ${elapsed.toFixed(2)}ms`);
     })();
-  }, [student.id, student]);
+  }, [student.id]);
 
   return (
     <div className="space-y-4">
@@ -449,11 +458,11 @@ function StudentDetail({
         </div>
         <div className="flex gap-6">
           <div className="w-20 h-20 border border-line overflow-hidden flex items-center justify-center shrink-0">
-            {student.photoUrl ? (
+            {fullStudent.photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={student.photoUrl}
-                alt={student.name}
+                src={fullStudent.photoUrl}
+                alt={fullStudent.name}
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -463,17 +472,17 @@ function StudentDetail({
           <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <div>
               <span className="text-muted">이름:</span>{" "}
-              <span className="text-ink font-medium">{student.name}</span>
+              <span className="text-ink font-medium">{fullStudent.name}</span>
             </div>
             <div>
               <span className="text-muted">생년월일:</span>{" "}
-              <span className="text-ink">{student.birthDate}</span>
+              <span className="text-ink">{fullStudent.birthDate}</span>
             </div>
-            {student.googleLink && (
+            {fullStudent.googleLink && (
               <div className="col-span-2">
                 <span className="text-muted">리포트:</span>{" "}
                 <a
-                  href={student.googleLink}
+                  href={fullStudent.googleLink}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-point underline text-xs"
@@ -486,7 +495,7 @@ function StudentDetail({
         </div>
         <div className="mt-4 pt-4 border-t border-line">
           <a
-            href={`/student/${student.id}`}
+            href={`/student/${fullStudent.id}`}
             target="_blank"
             className="text-xs px-4 py-2 border border-line text-ink-soft hover:border-ink hover:text-ink inline-flex items-center gap-1 transition"
           >

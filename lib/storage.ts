@@ -29,7 +29,7 @@ function invalidateExamsCache() {
 // ─────────────────────────────────────────────
 // 학생
 // ─────────────────────────────────────────────
-export async function loadStudents(force = false): Promise<Student[]> {
+export async function loadStudents(force = false, lightweight = false): Promise<Student[]> {
   if (
     !force &&
     studentsCache !== null &&
@@ -38,14 +38,20 @@ export async function loadStudents(force = false): Promise<Student[]> {
     return studentsCache;
   }
   try {
-    const res = await fetch("/api/storage?type=students", {
+    const url = `/api/storage?type=students${lightweight ? "&lightweight=true" : ""}`;
+    const res = await fetch(url, {
       next: { revalidate: 5 }, // 5초 동안 캐시된 데이터 사용
     });
     if (!res.ok) return studentsCache ?? [];
     const data = await res.json();
     const list = Array.isArray(data) ? (data as Student[]) : [];
-    studentsCache = list;
-    studentsCachedAt = Date.now();
+
+    // lightweight 모드가 아닐 때만 캐시 갱신 (전체 데이터)
+    if (!lightweight) {
+      studentsCache = list;
+      studentsCachedAt = Date.now();
+    }
+
     return list;
   } catch (e) {
     console.error("[loadStudents]", e);
