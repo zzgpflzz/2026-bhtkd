@@ -2,17 +2,35 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
 
 export const runtime = "nodejs"; // firebase-admin은 Node.js 런타임 필요
-export const revalidate = 5; // 5초 캐싱
+export const revalidate = 60; // 60초 캐싱 (어드민 전용이므로 길게 설정)
 
 type Collection = "students" | "exams";
 
 // ─────────────────────────────────────────────
-// Firestore Admin SDK 헬퍼
+// 서버 메모리 캐시 (Vercel 서버리스 인스턴스 간 공유되지 않음)
+// ─────────────────────────────────────────────
+const serverCache = new Map<string, { data: unknown[]; timestamp: number }>();
+const CACHE_TTL = 60_000; // 60초
+
+// ─────────────────────────────────────────────
+// Firestore Admin SDK 헬퍼 (메모리 캐시 포함)
 // ─────────────────────────────────────────────
 async function listCollection(name: Collection): Promise<unknown[]> {
+  const cacheKey = `collection:${name}`;
+  const cached = serverCache.get(cacheKey);
+
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    console.log(`[cache HIT] ${cacheKey}`);
+    return cached.data;
+  }
+
+  console.log(`[cache MISS] ${cacheKey} - fetching from Firestore...`);
   const db = getAdminDb();
   const snap = await db.collection(name).get();
-  return snap.docs.map((d) => d.data());
+  const data = snap.docs.map((d) => d.data());
+
+  serverCache.set(cacheKey, { data, timestamp: Date.now() });
+  return data;
 }
 
 async function getDoc(name: Collection, id: string): Promise<unknown | null> {

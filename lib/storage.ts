@@ -39,7 +39,8 @@ export async function loadStudents(force = false): Promise<Student[]> {
   }
   try {
     const res = await fetch("/api/storage?type=students", {
-      next: { revalidate: 5 }, // 5초 동안 캐시된 데이터 사용
+      next: { revalidate: 60 }, // 60초 캐싱
+      cache: "force-cache", // 강제 캐시
     });
     if (!res.ok) return studentsCache ?? [];
     const data = await res.json();
