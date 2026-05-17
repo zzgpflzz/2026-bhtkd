@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
 
-export const dynamic = "force-dynamic";
 export const runtime = "nodejs"; // firebase-admin은 Node.js 런타임 필요
+export const revalidate = 5; // 5초 캐싱
 
 type Collection = "students" | "exams";
 
@@ -13,6 +13,12 @@ async function listCollection(name: Collection): Promise<unknown[]> {
   const db = getAdminDb();
   const snap = await db.collection(name).get();
   return snap.docs.map((d) => d.data());
+}
+
+async function getDoc(name: Collection, id: string): Promise<unknown | null> {
+  const db = getAdminDb();
+  const doc = await db.collection(name).doc(id).get();
+  return doc.exists ? doc.data() : null;
 }
 
 async function setDoc(name: Collection, id: string, data: Record<string, unknown>) {
@@ -97,10 +103,21 @@ export async function GET(req: NextRequest) {
   const t0 = performance.now();
   const url = new URL(req.url);
   const type = url.searchParams.get("type");
+  const id = url.searchParams.get("id");
 
   try {
     await ensureMigrated();
 
+    // 단일 문서 조회: GET /api/storage?type=students&id=xxx
+    if (id && (type === "students" || type === "exams")) {
+      const doc = await getDoc(type as Collection, id);
+      console.log(
+        `[API GET ${type}/${id}] ${doc ? "found" : "not found"} · ${(performance.now() - t0).toFixed(0)}ms`,
+      );
+      return NextResponse.json(doc);
+    }
+
+    // 컬렉션 전체 조회
     if (type === "students" || type === "exams") {
       const list = await listCollection(type as Collection);
       console.log(
@@ -108,6 +125,8 @@ export async function GET(req: NextRequest) {
       );
       return NextResponse.json(list);
     }
+
+    // 둘 다 조회
     const [students, exams] = await Promise.all([
       listCollection("students"),
       listCollection("exams"),

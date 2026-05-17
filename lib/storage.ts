@@ -213,12 +213,24 @@ export async function deleteExam(id: string): Promise<Exam[]> {
 // 조회 헬퍼
 // ─────────────────────────────────────────────
 export async function findStudent(id: string): Promise<Student | null> {
+  // 캐시 확인
   if (studentsCache) {
     const hit = studentsCache.find((s) => s.id === id);
     if (hit) return hit;
   }
-  const list = await loadStudents();
-  return list.find((s) => s.id === id) ?? null;
+
+  // 단일 문서 조회 (전체 리스트 대신)
+  try {
+    const res = await fetch(`/api/storage?type=students&id=${encodeURIComponent(id)}`, {
+      next: { revalidate: 5 },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data && typeof data === 'object' ? (data as Student) : null;
+  } catch (e) {
+    console.error("[findStudent]", e);
+    return null;
+  }
 }
 
 export async function findStudentByNameAndBirthDate(

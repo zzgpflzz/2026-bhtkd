@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, ChevronDown, Download, User, X, Star } from "lucide-react";
 import StarRating from "../../../components/StarRating";
 import Certificate from "../../../components/Certificate";
-import { loadStudents, getStudentExams } from "../../../lib/storage";
+import { findStudent, getStudentExams } from "../../../lib/storage";
 import { RATING_GUIDE } from "../../../lib/types";
 import type { Student, Exam } from "../../../lib/types";
 
@@ -53,26 +53,18 @@ export default function StudentResultPage() {
       const pageStartTime = performance.now();
       console.log(`🔍 [Student Page] Loading data for student ID: ${params.id}`);
 
-      const studentStartTime = performance.now();
-      const list = await loadStudents();
-      const studentLoadTime = performance.now() - studentStartTime;
-      console.log(`📋 [Student Page] Students loaded - ${studentLoadTime.toFixed(2)}ms`);
+      // 단일 학생과 심사 기록을 병렬로 로드
+      const [s, examList] = await Promise.all([
+        findStudent(params.id),
+        getStudentExams(params.id),
+      ]);
 
-      const s = list.find((x) => x.id === params.id) ?? null;
       setStudent(s);
-      console.log(`🔍 [Student Page] Student found:`, s?.name || "Not found");
-
-      if (s) {
-        const examStartTime = performance.now();
-        const examList = await getStudentExams(s.id);
-        const examLoadTime = performance.now() - examStartTime;
-        console.log(`📋 [Student Page] Exams loaded - ${examLoadTime.toFixed(2)}ms`);
-
-        setExams(examList);
-      }
+      setExams(examList || []);
 
       const totalTime = performance.now() - pageStartTime;
       console.log(`✅ [Student Page] Total page load - ${totalTime.toFixed(2)}ms`);
+      console.log(`   Student: ${s?.name || "Not found"}, Exams: ${examList?.length || 0}`);
     })();
   }, [params.id]);
 
