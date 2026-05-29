@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   ArrowLeft,
   Plus,
@@ -13,7 +13,11 @@ import {
   Image as ImageIcon,
   Eye,
   Calendar,
+  Upload,
+  Download,
+  FileSpreadsheet,
 } from "lucide-react";
+import * as XLSX from "xlsx";
 import {
   loadStudents,
   findStudent,
@@ -45,7 +49,14 @@ export default function AdminPage() {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
 
-  // 컴포넌트 마운트 시 세션 스토리지에서 인증 상태 확인
+  // 엑셀 업로드/다운로드 상태
+  const [excelUploading, setExcelUploading] = useState(false);
+  const [excelResult, setExcelResult] = useState<{
+    added: number;
+    updated: number;
+  } | null>(null);
+  const excelInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const savedAuth = sessionStorage.getItem("baekho-admin-auth");
     if (savedAuth === "true") {
@@ -66,7 +77,9 @@ export default function AdminPage() {
         setDataLoading(false);
 
         const elapsed = performance.now() - startTime;
-        console.log(`✅ [Admin Page] Students loaded - ${elapsed.toFixed(2)}ms`);
+        console.log(
+          `✅ [Admin Page] Students loaded - ${elapsed.toFixed(2)}ms`,
+        );
       })();
     }
   }, [authed]);
@@ -76,7 +89,6 @@ export default function AdminPage() {
     if (pw === ADMIN_PASSWORD) {
       setAuthed(true);
       setPwError("");
-      // 세션 스토리지에 인증 상태 저장 (브라우저 탭 닫으면 사라짐)
       sessionStorage.setItem("baekho-admin-auth", "true");
     } else {
       setPwError("비밀번호가 올바르지 않습니다.");
@@ -93,12 +105,12 @@ export default function AdminPage() {
   );
 
   const handleSaveStudent = async (s: Student) => {
-    // 🚀 낙관적 업데이트: 먼저 UI를 즉시 업데이트
     const prevStudents = [...students];
     const idx = students.findIndex((st) => st.id === s.id);
-    const optimisticList = idx >= 0
-      ? students.map((st) => (st.id === s.id ? s : st))
-      : [...students, s];
+    const optimisticList =
+      idx >= 0
+        ? students.map((st) => (st.id === s.id ? s : st))
+        : [...students, s];
 
     setStudents(optimisticList);
     setEditingStudent(null);
@@ -106,7 +118,6 @@ export default function AdminPage() {
       setSelectedStudent(s);
     }
 
-    // 백그라운드에서 서버 저장
     try {
       const updatedList = await upsertStudent(s);
       if (Array.isArray(updatedList)) {
@@ -114,16 +125,15 @@ export default function AdminPage() {
       }
     } catch (error) {
       console.error("❌ Save student error:", error);
-      // 실패 시 롤백
       setStudents(prevStudents);
       alert("학생 저장에 실패했습니다: " + String(error));
     }
   };
 
   const handleDeleteStudent = async (id: string) => {
-    if (!confirm("정말 삭제하시겠습니까? 모든 심사 기록도 함께 삭제됩니다.")) return;
+    if (!confirm("정말 삭제하시겠습니까? 모든 심사 기록도 함께 삭제됩니다."))
+      return;
 
-    // 🚀 낙관적 업데이트: UI에서 먼저 제거
     const prevStudents = [...students];
     const optimisticList = students.filter((s) => s.id !== id);
 
@@ -132,7 +142,6 @@ export default function AdminPage() {
       setSelectedStudent(null);
     }
 
-    // 백그라운드에서 서버 삭제
     try {
       const updatedList = await deleteStudent(id);
       if (Array.isArray(updatedList)) {
@@ -140,28 +149,21 @@ export default function AdminPage() {
       }
     } catch (error) {
       console.error("❌ Delete student error:", error);
-      // 실패 시 롤백
       setStudents(prevStudents);
       alert("학생 삭제에 실패했습니다: " + String(error));
     }
   };
 
   const handleSaveExam = async (e: Exam) => {
-    // 🚀 낙관적 업데이트: 모달 즉시 닫기
     setEditingExam(null);
-
-    // 선택된 학생 강제 리렌더링 (StudentDetail에서 exams 새로고침)
     if (selectedStudent) {
       setSelectedStudent({ ...selectedStudent });
     }
-
-    // 백그라운드에서 서버 저장
     try {
       await upsertExam(e);
     } catch (error) {
       console.error("❌ Save exam error:", error);
       alert("심사 저장에 실패했습니다: " + String(error));
-      // 재로드로 복구
       if (selectedStudent) {
         setSelectedStudent({ ...selectedStudent });
       }
@@ -171,24 +173,134 @@ export default function AdminPage() {
   const handleDeleteExam = async (id: string) => {
     if (!confirm("이 심사 기록을 삭제하시겠습니까?")) return;
 
-    // 🚀 낙관적 업데이트: 모달 즉시 닫기
     setEditingExam(null);
-
-    // 선택된 학생 강제 리렌더링 (StudentDetail에서 exams 새로고침)
     if (selectedStudent) {
       setSelectedStudent({ ...selectedStudent });
     }
-
-    // 백그라운드에서 서버 삭제
     try {
       await deleteExam(id);
     } catch (error) {
       console.error("❌ Delete exam error:", error);
       alert("심사 삭제에 실패했습니다: " + String(error));
-      // 재로드로 복구
       if (selectedStudent) {
         setSelectedStudent({ ...selectedStudent });
       }
+    }
+  };
+
+  // ─────────────────────────────────────────────
+  // 엑셀 다운로드 (현재 학생 목록 → .xlsx)
+  // ─────────────────────────────────────────────
+  const handleExcelDownload = () => {
+    const rows = students.map((s) => ({
+      name: s.name,
+      birthDate: s.birthDate,
+      googleLink: s.googleLink || "",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(rows, {
+      header: ["name", "birthDate", "googleLink"],
+    });
+
+    // 헤더 한글 표시용 커스텀
+    ws["A1"] = { v: "이름 (name)", t: "s" };
+    ws["B1"] = { v: "생년월일 (birthDate)", t: "s" };
+    ws["C1"] = { v: "구글 리포트 링크 (googleLink)", t: "s" };
+
+    // 컬럼 너비
+    ws["!cols"] = [{ wch: 20 }, { wch: 18 }, { wch: 45 }];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "학생목록");
+    XLSX.writeFile(wb, "students.xlsx");
+  };
+
+  // ─────────────────────────────────────────────
+  // 엑셀 업로드 (xlsx → Firestore)
+  // ─────────────────────────────────────────────
+  const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setExcelUploading(true);
+    setExcelResult(null);
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws, {
+        defval: "",
+      });
+
+      if (rows.length === 0) {
+        alert("엑셀 파일에 데이터가 없습니다.");
+        return;
+      }
+
+      let added = 0;
+      let updated = 0;
+
+      for (const row of rows) {
+        // 헤더 행 건너뜀
+        const name = (row["name"] || row["이름 (name)"] || row["이름"] || "")
+          .toString()
+          .trim();
+        const birthDate = (
+          row["birthDate"] ||
+          row["생년월일 (birthDate)"] ||
+          row["생년월일"] ||
+          ""
+        )
+          .toString()
+          .trim();
+        const googleLink = (
+          row["googleLink"] ||
+          row["구글 리포트 링크 (googleLink)"] ||
+          row["구글리포트링크"] ||
+          ""
+        )
+          .toString()
+          .trim();
+
+        if (!name || !birthDate) continue;
+
+        // 생년월일 포맷 정규화 (8자리 숫자 → YYYY-MM-DD)
+        const digits = birthDate.replace(/\D/g, "");
+        const formattedBirthDate =
+          digits.length === 8
+            ? `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`
+            : birthDate;
+
+        // 기존 학생 중 동명이인 + 생년월일 일치 시 업데이트, 아니면 신규
+        const existing = students.find(
+          (s) => s.name === name && s.birthDate === formattedBirthDate,
+        );
+
+        const student: Student = existing
+          ? { ...existing, googleLink }
+          : {
+              ...newStudentTemplate(),
+              name,
+              birthDate: formattedBirthDate,
+              googleLink,
+            };
+
+        await upsertStudent(student);
+        if (existing) updated++;
+        else added++;
+      }
+
+      // 목록 새로고침
+      const refreshed = await loadStudents(true);
+      setStudents(refreshed || []);
+      setExcelResult({ added, updated });
+    } catch (err) {
+      console.error("[Excel Upload]", err);
+      alert("엑셀 파일 처리 중 오류가 발생했습니다: " + String(err));
+    } finally {
+      setExcelUploading(false);
+      if (excelInputRef.current) excelInputRef.current.value = "";
     }
   };
 
@@ -279,10 +391,49 @@ export default function AdminPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8 sm:py-10">
+        {/* ── 엑셀 업로드/다운로드 바 ── */}
+        <div className="border border-line mb-6 p-4 flex flex-wrap items-center gap-3 bg-white">
+          <FileSpreadsheet size={16} className="text-muted shrink-0" />
+          <span className="text-sm text-ink-soft flex-1 min-w-0">
+            엑셀로 학생 일괄 관리
+          </span>
+
+          {/* 다운로드 */}
+          <button
+            onClick={handleExcelDownload}
+            disabled={students.length === 0}
+            className="text-xs px-3 py-2 border border-line text-ink-soft hover:border-ink hover:text-ink inline-flex items-center gap-1.5 transition disabled:opacity-40"
+          >
+            <Download size={13} /> 현재 목록 다운로드
+          </button>
+
+          {/* 업로드 */}
+          <label
+            className={`text-xs px-3 py-2 border inline-flex items-center gap-1.5 cursor-pointer transition ${excelUploading ? "border-line text-muted opacity-60" : "border-line text-ink-soft hover:border-ink hover:text-ink"}`}
+          >
+            <Upload size={13} />
+            {excelUploading ? "업로드 중..." : "엑셀 업로드"}
+            <input
+              ref={excelInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleExcelUpload}
+              disabled={excelUploading}
+              className="hidden"
+            />
+          </label>
+
+          {/* 결과 메시지 */}
+          {excelResult && (
+            <span className="text-xs text-point">
+              ✓ 신규 {excelResult.added}명 추가, {excelResult.updated}명
+              업데이트 완료
+            </span>
+          )}
+        </div>
+
         {dataLoading ? (
-          // 🎨 향상된 스켈레톤 로딩 UI
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
-            {/* 좌측 스켈레톤 */}
             <div className="lg:col-span-1">
               <div className="border border-line mb-4 bg-white">
                 <div className="px-4 py-3 border-b border-line">
@@ -306,26 +457,19 @@ export default function AdminPage() {
               </div>
               <div className="w-full h-11 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded"></div>
             </div>
-            {/* 우측 스켈레톤 */}
             <div className="lg:col-span-2">
               <div className="border border-line p-6 bg-white space-y-6">
                 <div className="space-y-3">
                   <div className="h-6 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded w-1/3"></div>
                   <div className="h-4 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded"></div>
                   <div className="h-4 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded w-5/6"></div>
-                  <div className="h-4 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded w-4/6"></div>
-                </div>
-                <div className="border-t border-line pt-4 space-y-2">
-                  <div className="h-5 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded w-1/4"></div>
-                  <div className="h-3 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded w-full"></div>
-                  <div className="h-3 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded w-4/5"></div>
                 </div>
               </div>
             </div>
-
-            {/* 로딩 중 메시지 */}
             <div className="lg:col-span-3 text-center">
-              <p className="text-xs text-muted animate-pulse">학생 데이터를 불러오는 중...</p>
+              <p className="text-xs text-muted animate-pulse">
+                학생 데이터를 불러오는 중...
+              </p>
             </div>
           </div>
         ) : (
@@ -379,7 +523,9 @@ export default function AdminPage() {
                             <div className="font-semibold text-ink text-sm">
                               {s.name}
                             </div>
-                            <div className="text-xs text-muted">{s.birthDate}</div>
+                            <div className="text-xs text-muted">
+                              {s.birthDate}
+                            </div>
                           </div>
                         </div>
                       </button>
@@ -400,7 +546,9 @@ export default function AdminPage() {
               {selectedStudent ? (
                 <StudentDetail
                   student={selectedStudent}
-                  onEditStudent={() => setEditingStudent({ ...selectedStudent })}
+                  onEditStudent={() =>
+                    setEditingStudent({ ...selectedStudent })
+                  }
                   onDeleteStudent={handleDeleteStudent}
                   onAddExam={() =>
                     setEditingExam(newExamTemplate(selectedStudent.id))
@@ -418,7 +566,6 @@ export default function AdminPage() {
         )}
       </div>
 
-      {/* 학생 편집 모달 */}
       {editingStudent && (
         <StudentEditModal
           student={editingStudent}
@@ -427,7 +574,6 @@ export default function AdminPage() {
         />
       )}
 
-      {/* 심사 편집 모달 */}
       {editingExam && (
         <ExamEditModal
           exam={editingExam}
@@ -462,20 +608,13 @@ function StudentDetail({
 
   useEffect(() => {
     (async () => {
-      const startTime = performance.now();
-      console.log(`🔍 [StudentDetail] Loading exams for ${student.name}...`);
-
       const examList = await getStudentExams(student.id);
       setExams(examList || []);
-
-      const elapsed = performance.now() - startTime;
-      console.log(`✅ [StudentDetail] Exams loaded - ${elapsed.toFixed(2)}ms`);
     })();
   }, [student.id, student]);
 
   return (
     <div className="space-y-4">
-      {/* 학생 기본 정보 */}
       <div className="border border-line p-6">
         <div className="flex items-start justify-between mb-4">
           <h2 className="text-lg font-semibold text-ink">학생 기본 정보</h2>
@@ -542,7 +681,6 @@ function StudentDetail({
         </div>
       </div>
 
-      {/* 심사 이력 */}
       <div className="border border-line">
         <div className="p-4 border-b border-line flex items-center justify-between">
           <h2 className="text-base font-semibold text-ink">심사 이력</h2>
@@ -572,11 +710,7 @@ function StudentDetail({
                         {exam.examDate}
                       </span>
                       <span
-                        className={`text-[10px] px-1.5 py-0.5 ${
-                          exam.passed
-                            ? "border border-point text-point"
-                            : "border border-line text-muted"
-                        }`}
+                        className={`text-[10px] px-1.5 py-0.5 ${exam.passed ? "border border-point text-point" : "border border-line text-muted"}`}
                       >
                         {exam.passed ? "합격" : "재심사"}
                       </span>
@@ -633,13 +767,8 @@ function StudentEditModal({
 
     setUploading(true);
     try {
-      // 1. 이미지 압축 (800px, jpeg 82%)
       const compressed = await compressImageDataURL(file, 800, 0.82);
-
-      // 2. Firebase Storage에 업로드하고 public URL 받기
       const publicUrl = await uploadImageToStorage(compressed, form.id);
-
-      // 3. photoUrl을 public URL로 설정
       update("photoUrl", publicUrl);
       alert("사진이 업로드되었습니다!");
     } catch (err) {
@@ -647,7 +776,6 @@ function StudentEditModal({
       alert("사진 업로드 중 오류가 발생했습니다: " + String(err));
     } finally {
       setUploading(false);
-      // 동일 파일 재선택 가능하도록 input 초기화
       e.target.value = "";
     }
   };
@@ -696,33 +824,36 @@ function StudentEditModal({
                 value={form.birthDate}
                 onChange={(e) => {
                   const inputValue = e.target.value;
-                  // 하이픈을 제거한 숫자만 추출하여 8자리로 제한
                   const digitsOnly = inputValue.replace(/\D/g, "").slice(0, 8);
-
-                  // 8자리가 되면 YYYY-MM-DD 형식으로 변환하여 저장
                   if (digitsOnly.length === 8) {
-                    const formatted = `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(4, 6)}-${digitsOnly.slice(6, 8)}`;
-                    update("birthDate", formatted);
-                  } else if (inputValue.includes('-') && /^\d{4}-\d{2}-\d{2}$/.test(inputValue)) {
-                    // 이미 YYYY-MM-DD 형식인 경우 그대로 사용
+                    update(
+                      "birthDate",
+                      `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(4, 6)}-${digitsOnly.slice(6, 8)}`,
+                    );
+                  } else if (
+                    inputValue.includes("-") &&
+                    /^\d{4}-\d{2}-\d{2}$/.test(inputValue)
+                  ) {
                     update("birthDate", inputValue);
                   } else {
-                    // 입력 중인 경우 원본 그대로 저장
                     update("birthDate", inputValue);
                   }
                 }}
                 onBlur={(e) => {
-                  // 포커스를 잃을 때 하이픈 제거 후 재포맷
                   const digitsOnly = e.target.value.replace(/\D/g, "");
                   if (digitsOnly.length === 8) {
-                    const formatted = `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(4, 6)}-${digitsOnly.slice(6, 8)}`;
-                    update("birthDate", formatted);
+                    update(
+                      "birthDate",
+                      `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(4, 6)}-${digitsOnly.slice(6, 8)}`,
+                    );
                   }
                 }}
                 className="form-input"
                 placeholder="2015-04-12 또는 20150412"
               />
-              <p className="text-xs text-muted mt-1.5">하이픈 제거된 8자리 숫자가 기본 비밀번호로 사용됩니다</p>
+              <p className="text-xs text-muted mt-1.5">
+                하이픈 제거된 8자리 숫자가 기본 비밀번호로 사용됩니다
+              </p>
             </Field>
           </div>
 
@@ -856,7 +987,6 @@ function ExamEditModal({
           </button>
         </div>
 
-        {/* 기본 정보 */}
         <Section title="기본 정보">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Field label="심사 월 (YYYY-MM)">
@@ -866,12 +996,16 @@ function ExamEditModal({
                 onChange={(e) => update("examDate", `${e.target.value}-01`)}
                 className="form-input"
               />
-              <p className="text-xs text-muted mt-1.5">월 단위로만 선택됩니다</p>
+              <p className="text-xs text-muted mt-1.5">
+                월 단위로만 선택됩니다
+              </p>
             </Field>
             <Field label="현재 급수">
               <select
                 value={form.currentGrade}
-                onChange={(e) => update("currentGrade", e.target.value as Grade)}
+                onChange={(e) =>
+                  update("currentGrade", e.target.value as Grade)
+                }
                 className="form-input"
               >
                 {GRADES.map((g) => (
@@ -910,7 +1044,6 @@ function ExamEditModal({
           </div>
         </Section>
 
-        {/* 기본 수련 영역 */}
         <Section title="기본 수련 영역 (별점 1~5)">
           <div className="space-y-3">
             <StarRating
@@ -944,7 +1077,6 @@ function ExamEditModal({
           </div>
         </Section>
 
-        {/* 태도 인성 영역 */}
         <Section title="태도 인성 영역 (별점 1~5)">
           <div className="space-y-3">
             <StarRating
@@ -978,7 +1110,6 @@ function ExamEditModal({
           </div>
         </Section>
 
-        {/* 생활 습관 영역 */}
         <Section title="생활 습관 영역 (별점 1~5)">
           <div className="space-y-3">
             <StarRating
@@ -1012,7 +1143,6 @@ function ExamEditModal({
           </div>
         </Section>
 
-        {/* 코멘트 */}
         <Section title="관장님 한줄 코멘트">
           <textarea
             value={form.comment}
