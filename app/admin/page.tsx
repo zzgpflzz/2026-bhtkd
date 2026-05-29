@@ -57,6 +57,15 @@ export default function AdminPage() {
   } | null>(null);
   const excelInputRef = useRef<HTMLInputElement>(null);
 
+  // 사진 폴더 업로드 상태
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoResult, setPhotoResult] = useState<{
+    ok: number;
+    notFound: string[];
+    errors: string[];
+  } | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const savedAuth = sessionStorage.getItem("baekho-admin-auth");
     if (savedAuth === "true") {
@@ -186,6 +195,65 @@ export default function AdminPage() {
         setSelectedStudent({ ...selectedStudent });
       }
     }
+  };
+
+  // ─────────────────────────────────────────────
+  // 사진 폴더 일괄 업로드
+  // 파일명 규칙: 이름_생년월일.jpg (예: 홍길동_20150412.jpg)
+  // ─────────────────────────────────────────────
+  const handlePhotoFolderUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    setPhotoUploading(true);
+    setPhotoResult(null);
+
+    let okCount = 0;
+    const notFound: string[] = [];
+    const errors: string[] = [];
+
+    for (const file of files) {
+      const baseName = file.name.replace(/\.[^.]+$/, "");
+      const parts = baseName.split("_");
+      if (parts.length < 2) {
+        notFound.push(`${file.name} (파일명 형식 오류)`);
+        continue;
+      }
+
+      const name = parts.slice(0, -1).join("_");
+      const birthRaw = parts[parts.length - 1];
+      const digits = birthRaw.replace(/\D/g, "");
+      if (digits.length !== 8) {
+        notFound.push(`${file.name} (생년월일 형식 오류)`);
+        continue;
+      }
+      const birthDate = `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
+
+      const matched = students.find(
+        (s) => s.name === name && s.birthDate === birthDate,
+      );
+      if (!matched) {
+        notFound.push(`${file.name} (미매칭: ${name} / ${birthDate})`);
+        continue;
+      }
+
+      try {
+        const compressed = await compressImageDataURL(file, 800, 0.82);
+        const publicUrl = await uploadImageToStorage(compressed, matched.id);
+        await upsertStudent({ ...matched, photoUrl: publicUrl });
+        okCount++;
+      } catch (err) {
+        errors.push(`${file.name}: ${String(err)}`);
+      }
+    }
+
+    const refreshed = await loadStudents(true);
+    setStudents(refreshed || []);
+    setPhotoResult({ ok: okCount, notFound, errors });
+    setPhotoUploading(false);
+    if (photoInputRef.current) photoInputRef.current.value = "";
   };
 
   // ─────────────────────────────────────────────
@@ -429,6 +497,67 @@ export default function AdminPage() {
               ✓ 신규 {excelResult.added}명 추가, {excelResult.updated}명
               업데이트 완료
             </span>
+          )}
+        </div>
+
+        {/* ── 사진 폴더 일괄 업로드 바 ── */}
+        <div className="border border-line mb-6 p-4 bg-white">
+          <div className="flex flex-wrap items-center gap-3">
+            <ImageIcon size={16} className="text-muted shrink-0" />
+            <span className="text-sm text-ink-soft flex-1 min-w-0">
+              사진 일괄 업로드
+            </span>
+            <span className="text-xs text-muted">
+              파일명 규칙: 이름_생년월일.jpg (예: 홍길동_20150412.jpg)
+            </span>
+            <label
+              className={`text-xs px-3 py-2 border inline-flex items-center gap-1.5 cursor-pointer transition ${photoUploading ? "border-line text-muted opacity-60" : "border-line text-ink-soft hover:border-ink hover:text-ink"}`}
+            >
+              <Upload size={13} />
+              {photoUploading ? `업로드 중...` : "사진 폴더 선택"}
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handlePhotoFolderUpload}
+                disabled={photoUploading}
+                className="hidden"
+              />
+            </label>
+          </div>
+
+          {/* 사진 업로드 결과 */}
+          {photoResult && (
+            <div className="mt-3 space-y-1 text-xs border-t border-line pt-3">
+              <p className="text-point">
+                ✓ {photoResult.ok}명 사진 업로드 완료
+              </p>
+              {photoResult.notFound.length > 0 && (
+                <div>
+                  <p className="text-muted font-semibold">
+                    매칭 실패 ({photoResult.notFound.length}건):
+                  </p>
+                  {photoResult.notFound.map((msg, i) => (
+                    <p key={i} className="text-muted pl-2">
+                      • {msg}
+                    </p>
+                  ))}
+                </div>
+              )}
+              {photoResult.errors.length > 0 && (
+                <div>
+                  <p className="text-muted font-semibold">
+                    오류 ({photoResult.errors.length}건):
+                  </p>
+                  {photoResult.errors.map((msg, i) => (
+                    <p key={i} className="text-muted pl-2">
+                      • {msg}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
 
