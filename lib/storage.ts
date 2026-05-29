@@ -7,7 +7,7 @@ let studentsCache: Student[] | null = null;
 let examsCache: Exam[] | null = null;
 let studentsCachedAt = 0;
 let examsCachedAt = 0;
-const CACHE_TTL = 60_000; // 60초
+const CACHE_TTL = 30_000; // 30초
 
 export function clearCache() {
   studentsCache = null;
@@ -39,7 +39,8 @@ export async function loadStudents(force = false): Promise<Student[]> {
   }
   try {
     const res = await fetch("/api/storage?type=students", {
-      next: { revalidate: 30 }, // 30초로 수정
+      next: { revalidate: 30 }, // 30초 캐싱
+      // force-cache 제거 — 오래된 캐시로 데이터 안 보이는 문제 해결
     });
     if (!res.ok) return studentsCache ?? [];
     const data = await res.json();
@@ -133,7 +134,7 @@ export async function loadExams(force = false): Promise<Exam[]> {
   }
   try {
     const res = await fetch("/api/storage?type=exams", {
-      next: { revalidate: 5 }, // 5초 동안 캐시된 데이터 사용
+      next: { revalidate: 30 }, // 30초로 통일 (기존 5초 → 너무 짧아서 Firestore 과호출)
     });
     if (!res.ok) return examsCache ?? [];
     const data = await res.json();
@@ -224,7 +225,7 @@ export async function findStudent(id: string): Promise<Student | null> {
     const res = await fetch(
       `/api/storage?type=students&id=${encodeURIComponent(id)}`,
       {
-        next: { revalidate: 5 },
+        next: { revalidate: 30 },
       },
     );
     if (!res.ok) return null;
