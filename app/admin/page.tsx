@@ -222,7 +222,7 @@ export default function AdminPage() {
         continue;
       }
 
-      const name = parts.slice(0, -1).join("_");
+      const name = parts.slice(0, -1).join("_").trim();
       const birthRaw = parts[parts.length - 1];
       const digits = birthRaw.replace(/\D/g, "");
       if (digits.length !== 8) {
@@ -232,7 +232,10 @@ export default function AdminPage() {
       const birthDate = `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
 
       const matched = students.find(
-        (s) => s.name === name && s.birthDate === birthDate,
+        (s) =>
+          s.name.trim() === name &&
+          (s.birthDate === birthDate ||
+            s.birthDate.replace(/-/g, "") === digits),
       );
       if (!matched) {
         notFound.push(`${file.name} (미매칭: ${name} / ${birthDate})`);
