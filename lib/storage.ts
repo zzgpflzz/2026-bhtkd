@@ -39,8 +39,7 @@ export async function loadStudents(force = false): Promise<Student[]> {
   }
   try {
     const res = await fetch("/api/storage?type=students", {
-      next: { revalidate: 60 }, // 60초 캐싱
-      cache: "force-cache", // 강제 캐시
+      next: { revalidate: 30 }, // 30초로 수정
     });
     if (!res.ok) return studentsCache ?? [];
     const data = await res.json();
@@ -222,12 +221,15 @@ export async function findStudent(id: string): Promise<Student | null> {
 
   // 단일 문서 조회 (전체 리스트 대신)
   try {
-    const res = await fetch(`/api/storage?type=students&id=${encodeURIComponent(id)}`, {
-      next: { revalidate: 5 },
-    });
+    const res = await fetch(
+      `/api/storage?type=students&id=${encodeURIComponent(id)}`,
+      {
+        next: { revalidate: 5 },
+      },
+    );
     if (!res.ok) return null;
     const data = await res.json();
-    return data && typeof data === 'object' ? (data as Student) : null;
+    return data && typeof data === "object" ? (data as Student) : null;
   } catch (e) {
     console.error("[findStudent]", e);
     return null;

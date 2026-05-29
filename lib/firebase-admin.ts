@@ -88,6 +88,7 @@ function getAdminApp(): App {
   const { projectId, clientEmail, privateKey } = loadServiceAccount();
   cachedApp = initializeApp({
     credential: cert({ projectId, clientEmail, privateKey }),
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET, // ← 이 줄 추가
   });
   return cachedApp;
 }
