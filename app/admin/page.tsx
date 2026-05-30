@@ -53,7 +53,7 @@ function getSchoolGrade(birthDate: string): { label: string; order: number } {
   // 입학 연도 = 만 8세가 되는 해 (생년 + 8 - 1 = 생년 + 7)
   // 초1 입학 기준: schoolYear - birthYear - 1 === 6 → 만 6세에 입학 (한국 기준: 생년+8년에 초1)
   // 한국 기준: 생년 + 8 = 초1 입학 연도
-  const grade = schoolYear - birthYear - 5; // 초1=1, 초6=6
+  const grade = schoolYear - birthYear - 6; // 한국 기준: 생년+7=초1입학연도 (2019+7=2026 → 초1)
 
   if (grade < 1) return { label: "유치부", order: 0 };
   if (grade >= 7) return { label: "중등부", order: 7 };
@@ -829,6 +829,31 @@ function StudentEditModal({
             />
           </Field>
 
+          <div className="pt-3 border-t border-line space-y-2">
+            <p className="text-xs font-semibold text-ink-soft mb-2">
+              구분 (admin 전용)
+            </p>
+            <div className="flex gap-6">
+              <label className="inline-flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.hasBlackBelt || false}
+                  onChange={(e) => update("hasBlackBelt", e.target.checked)}
+                  className="w-4 h-4 accent-[#FF0044]"
+                />
+                <span className="text-sm text-ink-soft">유품자</span>
+              </label>
+              <label className="inline-flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.isColorBelt || false}
+                  onChange={(e) => update("isColorBelt", e.target.checked)}
+                  className="w-4 h-4 accent-[#FF0044]"
+                />
+                <span className="text-sm text-ink-soft">유급자</span>
+              </label>
+            </div>
+          </div>
           <div className="pt-3 border-t border-line">
             <label className="inline-flex items-center gap-2 cursor-pointer">
               <input
