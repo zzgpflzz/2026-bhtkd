@@ -60,9 +60,18 @@ function getSchoolGrade(birthDate: string): { label: string; order: number } {
   return { label: `초${grade}`, order: grade };
 }
 
-const GRADE_FILTER_OPTIONS = ["전체", "유치부", "초1", "초2", "초3", "초4", "초5", "초6", "중등부"] as const;
-type GradeFilterType = typeof GRADE_FILTER_OPTIONS[number];
-
+const GRADE_FILTER_OPTIONS = [
+  "전체",
+  "유치부",
+  "초1",
+  "초2",
+  "초3",
+  "초4",
+  "초5",
+  "초6",
+  "중등부",
+] as const;
+type GradeFilterType = (typeof GRADE_FILTER_OPTIONS)[number];
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
@@ -77,8 +86,6 @@ export default function AdminPage() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
-
-
 
   useEffect(() => {
     const savedAuth = sessionStorage.getItem("baekho-admin-auth");
@@ -100,7 +107,9 @@ export default function AdminPage() {
         setDataLoading(false);
 
         const elapsed = performance.now() - startTime;
-        console.log(`✅ [Admin Page] Students loaded - ${elapsed.toFixed(2)}ms`);
+        console.log(
+          `✅ [Admin Page] Students loaded - ${elapsed.toFixed(2)}ms`,
+        );
       })();
     }
   }, [authed]);
@@ -121,24 +130,29 @@ export default function AdminPage() {
     sessionStorage.removeItem("baekho-admin-auth");
   };
 
-  const filtered = students.filter((s) => {
-    const nameMatch = s.name.toLowerCase().includes(search.toLowerCase().trim());
-    const { label } = getSchoolGrade(s.birthDate);
-    const gradeMatch = gradeFilter === "전체" || label === gradeFilter;
-    return nameMatch && gradeMatch;
-  }).sort((a, b) => {
-    const ga = getSchoolGrade(a.birthDate).order;
-    const gb = getSchoolGrade(b.birthDate).order;
-    if (ga !== gb) return ga - gb;
-    return a.birthDate.localeCompare(b.birthDate);
-  });
+  const filtered = students
+    .filter((s) => {
+      const nameMatch = s.name
+        .toLowerCase()
+        .includes(search.toLowerCase().trim());
+      const { label } = getSchoolGrade(s.birthDate);
+      const gradeMatch = gradeFilter === "전체" || label === gradeFilter;
+      return nameMatch && gradeMatch;
+    })
+    .sort((a, b) => {
+      const ga = getSchoolGrade(a.birthDate).order;
+      const gb = getSchoolGrade(b.birthDate).order;
+      if (ga !== gb) return ga - gb;
+      return a.birthDate.localeCompare(b.birthDate);
+    });
 
   const handleSaveStudent = async (s: Student) => {
     const prevStudents = [...students];
     const idx = students.findIndex((st) => st.id === s.id);
-    const optimisticList = idx >= 0
-      ? students.map((st) => (st.id === s.id ? s : st))
-      : [...students, s];
+    const optimisticList =
+      idx >= 0
+        ? students.map((st) => (st.id === s.id ? s : st))
+        : [...students, s];
 
     setStudents(optimisticList);
     setEditingStudent(null);
@@ -159,7 +173,8 @@ export default function AdminPage() {
   };
 
   const handleDeleteStudent = async (id: string) => {
-    if (!confirm("정말 삭제하시겠습니까? 모든 심사 기록도 함께 삭제됩니다.")) return;
+    if (!confirm("정말 삭제하시겠습니까? 모든 심사 기록도 함께 삭제됩니다."))
+      return;
 
     const prevStudents = [...students];
     const optimisticList = students.filter((s) => s.id !== id);
@@ -302,7 +317,6 @@ export default function AdminPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8 sm:py-10">
-
         {dataLoading ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
             <div className="lg:col-span-1">
@@ -312,7 +326,11 @@ export default function AdminPage() {
                 </div>
                 <div className="p-4 space-y-4">
                   {[...Array(6)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-3" style={{ animationDelay: `${i * 100}ms` }}>
+                    <div
+                      key={i}
+                      className="flex items-center gap-3"
+                      style={{ animationDelay: `${i * 100}ms` }}
+                    >
                       <div className="w-10 h-10 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded"></div>
                       <div className="flex-1 space-y-2">
                         <div className="h-4 bg-gradient-to-r from-line-soft via-line to-line-soft bg-[length:200%_100%] animate-shimmer rounded w-3/4"></div>
@@ -334,7 +352,9 @@ export default function AdminPage() {
               </div>
             </div>
             <div className="lg:col-span-3 text-center">
-              <p className="text-xs text-muted animate-pulse">학생 데이터를 불러오는 중...</p>
+              <p className="text-xs text-muted animate-pulse">
+                학생 데이터를 불러오는 중...
+              </p>
             </div>
           </div>
         ) : (
@@ -383,14 +403,26 @@ export default function AdminPage() {
                           <div className="w-10 h-10 border border-line overflow-hidden flex items-center justify-center shrink-0">
                             {s.photoUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={s.photoUrl} alt={s.name} className="w-full h-full object-cover" />
+                              <img
+                                src={s.photoUrl}
+                                alt={s.name}
+                                className="w-full h-full object-cover"
+                              />
                             ) : (
-                              <ImageIcon size={16} strokeWidth={1.5} className="text-line" />
+                              <ImageIcon
+                                size={16}
+                                strokeWidth={1.5}
+                                className="text-line"
+                              />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-ink text-sm">{s.name}</div>
-                            <div className="text-xs text-muted">{s.birthDate}</div>
+                            <div className="font-semibold text-ink text-sm">
+                              {s.name}
+                            </div>
+                            <div className="text-xs text-muted">
+                              {s.birthDate}
+                            </div>
                           </div>
                         </div>
                       </button>
@@ -411,9 +443,13 @@ export default function AdminPage() {
               {selectedStudent ? (
                 <StudentDetail
                   student={selectedStudent}
-                  onEditStudent={() => setEditingStudent({ ...selectedStudent })}
+                  onEditStudent={() =>
+                    setEditingStudent({ ...selectedStudent })
+                  }
                   onDeleteStudent={handleDeleteStudent}
-                  onAddExam={() => setEditingExam(newExamTemplate(selectedStudent.id))}
+                  onAddExam={() =>
+                    setEditingExam(newExamTemplate(selectedStudent.id))
+                  }
                   onEditExam={(exam) => setEditingExam({ ...exam })}
                   onDeleteExam={handleDeleteExam}
                 />
@@ -443,7 +479,6 @@ export default function AdminPage() {
           onDelete={() => handleDeleteExam(editingExam.id)}
         />
       )}
-      </div>
     </main>
   );
 }
@@ -499,7 +534,11 @@ function StudentDetail({
           <div className="w-20 h-20 border border-line overflow-hidden flex items-center justify-center shrink-0">
             {student.photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={student.photoUrl} alt={student.name} className="w-full h-full object-cover" />
+              <img
+                src={student.photoUrl}
+                alt={student.name}
+                className="w-full h-full object-cover"
+              />
             ) : (
               <ImageIcon size={24} strokeWidth={1.5} className="text-line" />
             )}
@@ -515,13 +554,25 @@ function StudentDetail({
             </div>
             <div>
               <span className="text-muted">학년:</span>{" "}
-              <span className="text-ink">{getSchoolGrade(student.birthDate).label}</span>
+              <span className="text-ink">
+                {getSchoolGrade(student.birthDate).label}
+              </span>
             </div>
             <div className="flex items-center gap-3">
               <span className="text-muted">구분:</span>{" "}
-              {student.hasBlackBelt && <span className="text-[11px] px-1.5 py-0.5 bg-ink text-paper">유품자</span>}
-              {student.isColorBelt && <span className="text-[11px] px-1.5 py-0.5 border border-line text-ink-soft">유급자</span>}
-              {!student.hasBlackBelt && !student.isColorBelt && <span className="text-xs text-muted">미설정</span>}
+              {student.hasBlackBelt && (
+                <span className="text-[11px] px-1.5 py-0.5 bg-ink text-paper">
+                  유품자
+                </span>
+              )}
+              {student.isColorBelt && (
+                <span className="text-[11px] px-1.5 py-0.5 border border-line text-ink-soft">
+                  유급자
+                </span>
+              )}
+              {!student.hasBlackBelt && !student.isColorBelt && (
+                <span className="text-xs text-muted">미설정</span>
+              )}
             </div>
             {student.googleLink && (
               <div className="col-span-2">
@@ -561,16 +612,25 @@ function StudentDetail({
         </div>
         <div className="max-h-[calc(100vh-450px)] overflow-y-auto">
           {exams.length === 0 ? (
-            <div className="p-8 text-center text-muted text-sm">등록된 심사 기록이 없습니다.</div>
+            <div className="p-8 text-center text-muted text-sm">
+              등록된 심사 기록이 없습니다.
+            </div>
           ) : (
             exams.map((exam) => (
-              <div key={exam.id} className="p-4 border-b border-line last:border-b-0">
+              <div
+                key={exam.id}
+                className="p-4 border-b border-line last:border-b-0"
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <Calendar size={14} className="text-muted" />
-                      <span className="text-sm font-medium text-ink">{exam.examDate}</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 ${exam.passed ? "border border-point text-point" : "border border-line text-muted"}`}>
+                      <span className="text-sm font-medium text-ink">
+                        {exam.examDate}
+                      </span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 ${exam.passed ? "border border-point text-point" : "border border-line text-muted"}`}
+                      >
                         {exam.passed ? "합격" : "재심사"}
                       </span>
                     </div>
@@ -650,10 +710,18 @@ function StudentEditModal({
 
   return (
     <div className="fixed inset-0 bg-ink/40 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <form onSubmit={handleSubmit} className="bg-paper border border-line max-w-2xl w-full p-6 sm:p-8 my-8">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-paper border border-line max-w-2xl w-full p-6 sm:p-8 my-8"
+      >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-ink">학생 기본 정보</h3>
-          <button type="button" onClick={onClose} className="p-1.5 hover:bg-line-soft" aria-label="닫기">
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 hover:bg-line-soft"
+            aria-label="닫기"
+          >
             <X size={18} />
           </button>
         </div>
@@ -661,7 +729,12 @@ function StudentEditModal({
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="학생 이름">
-              <input value={form.name} onChange={(e) => update("name", e.target.value)} className="form-input" placeholder="홍길동" />
+              <input
+                value={form.name}
+                onChange={(e) => update("name", e.target.value)}
+                className="form-input"
+                placeholder="홍길동"
+              />
             </Field>
             <Field label="생년월일 (YYYY-MM-DD)">
               <input
@@ -672,8 +745,14 @@ function StudentEditModal({
                   const inputValue = e.target.value;
                   const digitsOnly = inputValue.replace(/\D/g, "").slice(0, 8);
                   if (digitsOnly.length === 8) {
-                    update("birthDate", `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(4, 6)}-${digitsOnly.slice(6, 8)}`);
-                  } else if (inputValue.includes('-') && /^\d{4}-\d{2}-\d{2}$/.test(inputValue)) {
+                    update(
+                      "birthDate",
+                      `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(4, 6)}-${digitsOnly.slice(6, 8)}`,
+                    );
+                  } else if (
+                    inputValue.includes("-") &&
+                    /^\d{4}-\d{2}-\d{2}$/.test(inputValue)
+                  ) {
                     update("birthDate", inputValue);
                   } else {
                     update("birthDate", inputValue);
@@ -682,13 +761,18 @@ function StudentEditModal({
                 onBlur={(e) => {
                   const digitsOnly = e.target.value.replace(/\D/g, "");
                   if (digitsOnly.length === 8) {
-                    update("birthDate", `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(4, 6)}-${digitsOnly.slice(6, 8)}`);
+                    update(
+                      "birthDate",
+                      `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(4, 6)}-${digitsOnly.slice(6, 8)}`,
+                    );
                   }
                 }}
                 className="form-input"
                 placeholder="2015-04-12 또는 20150412"
               />
-              <p className="text-xs text-muted mt-1.5">하이픈 제거된 8자리 숫자가 기본 비밀번호로 사용됩니다</p>
+              <p className="text-xs text-muted mt-1.5">
+                하이픈 제거된 8자리 숫자가 기본 비밀번호로 사용됩니다
+              </p>
             </Field>
           </div>
 
@@ -697,39 +781,81 @@ function StudentEditModal({
               <div className="w-16 h-16 border border-line overflow-hidden flex items-center justify-center">
                 {form.photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={form.photoUrl} alt="" className="w-full h-full object-cover" />
+                  <img
+                    src={form.photoUrl}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
-                  <ImageIcon size={20} strokeWidth={1.5} className="text-line" />
+                  <ImageIcon
+                    size={20}
+                    strokeWidth={1.5}
+                    className="text-line"
+                  />
                 )}
               </div>
-              <input type="file" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} className="text-sm" />
-              {uploading && <span className="text-xs text-muted">업로드 중...</span>}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                disabled={uploading}
+                className="text-sm"
+              />
+              {uploading && (
+                <span className="text-xs text-muted">업로드 중...</span>
+              )}
               {form.photoUrl && !uploading && (
-                <button type="button" onClick={() => update("photoUrl", "")} className="text-xs text-point underline">
+                <button
+                  type="button"
+                  onClick={() => update("photoUrl", "")}
+                  className="text-xs text-point underline"
+                >
                   사진 제거
                 </button>
               )}
             </div>
-            <p className="text-xs text-muted mt-1.5">사진은 Firebase Storage에 저장되며 public URL로 관리됩니다</p>
+            <p className="text-xs text-muted mt-1.5">
+              사진은 Firebase Storage에 저장되며 public URL로 관리됩니다
+            </p>
           </Field>
 
           <Field label="구글 리포트 링크 (선택)">
-            <input type="url" value={form.googleLink || ""} onChange={(e) => update("googleLink", e.target.value)} className="form-input" placeholder="https://drive.google.com/..." />
+            <input
+              type="url"
+              value={form.googleLink || ""}
+              onChange={(e) => update("googleLink", e.target.value)}
+              className="form-input"
+              placeholder="https://drive.google.com/..."
+            />
           </Field>
 
           <div className="pt-3 border-t border-line">
             <label className="inline-flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={form.isEnglishName || false} onChange={(e) => update("isEnglishName", e.target.checked)} className="w-4 h-4 accent-[#FF0044]" />
-              <span className="text-sm text-ink-soft">영어 이름 (체크 시 성을 제거하지 않고 풀네임에 '의'를 붙입니다)</span>
+              <input
+                type="checkbox"
+                checked={form.isEnglishName || false}
+                onChange={(e) => update("isEnglishName", e.target.checked)}
+                className="w-4 h-4 accent-[#FF0044]"
+              />
+              <span className="text-sm text-ink-soft">
+                영어 이름 (체크 시 성을 제거하지 않고 풀네임에 '의'를 붙입니다)
+              </span>
             </label>
           </div>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 justify-end mt-6">
-          <button type="button" onClick={onClose} className="px-4 py-2.5 border border-line text-ink-soft hover:border-ink hover:text-ink">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 border border-line text-ink-soft hover:border-ink hover:text-ink"
+          >
             취소
           </button>
-          <button type="submit" className="px-5 py-2.5 bg-ink hover:bg-ink/85 text-paper font-semibold inline-flex items-center justify-center gap-2 transition">
+          <button
+            type="submit"
+            className="px-5 py-2.5 bg-ink hover:bg-ink/85 text-paper font-semibold inline-flex items-center justify-center gap-2 transition"
+          >
             <Save size={16} /> 저장하기
           </button>
         </div>
@@ -764,10 +890,18 @@ function ExamEditModal({
 
   return (
     <div className="fixed inset-0 bg-ink/40 z-50 flex items-start justify-center p-4 overflow-y-auto pt-20">
-      <form onSubmit={handleSubmit} className="bg-paper border border-line max-w-4xl w-full p-6 sm:p-8 my-8">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-paper border border-line max-w-4xl w-full p-6 sm:p-8 my-8"
+      >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-ink">심사 정보 입력</h3>
-          <button type="button" onClick={onClose} className="p-1.5 hover:bg-line-soft" aria-label="닫기">
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 hover:bg-line-soft"
+            aria-label="닫기"
+          >
             <X size={18} />
           </button>
         </div>
@@ -775,68 +909,189 @@ function ExamEditModal({
         <Section title="기본 정보">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Field label="심사 월 (YYYY-MM)">
-              <input type="month" value={form.examDate.slice(0, 7)} onChange={(e) => update("examDate", `${e.target.value}-01`)} className="form-input" />
-              <p className="text-xs text-muted mt-1.5">월 단위로만 선택됩니다</p>
+              <input
+                type="month"
+                value={form.examDate.slice(0, 7)}
+                onChange={(e) => update("examDate", `${e.target.value}-01`)}
+                className="form-input"
+              />
+              <p className="text-xs text-muted mt-1.5">
+                월 단위로만 선택됩니다
+              </p>
             </Field>
             <Field label="현재 급수">
-              <select value={form.currentGrade} onChange={(e) => update("currentGrade", e.target.value as Grade)} className="form-input">
-                {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
+              <select
+                value={form.currentGrade}
+                onChange={(e) =>
+                  update("currentGrade", e.target.value as Grade)
+                }
+                className="form-input"
+              >
+                {GRADES.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
               </select>
             </Field>
             <Field label="응심 급수">
-              <select value={form.targetGrade} onChange={(e) => update("targetGrade", e.target.value as Grade)} className="form-input">
-                {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
+              <select
+                value={form.targetGrade}
+                onChange={(e) => update("targetGrade", e.target.value as Grade)}
+                className="form-input"
+              >
+                {GRADES.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
               </select>
             </Field>
           </div>
           <div className="mt-3">
             <label className="inline-flex items-center gap-2">
-              <input type="checkbox" checked={form.passed} onChange={(e) => update("passed", e.target.checked)} className="w-4 h-4 accent-[#FF0044]" />
-              <span className="text-sm text-ink-soft">합격 처리 (체크 해제 시 재심사)</span>
+              <input
+                type="checkbox"
+                checked={form.passed}
+                onChange={(e) => update("passed", e.target.checked)}
+                className="w-4 h-4 accent-[#FF0044]"
+              />
+              <span className="text-sm text-ink-soft">
+                합격 처리 (체크 해제 시 재심사)
+              </span>
             </label>
           </div>
         </Section>
 
         <Section title="기본 수련 영역 (별점 1~5)">
           <div className="space-y-3">
-            <StarRating label="기본기" value={form.basicSkills.basics} onChange={(v) => update("basicSkills", { ...form.basicSkills, basics: v })} />
-            <StarRating label="품새" value={form.basicSkills.poomsae} onChange={(v) => update("basicSkills", { ...form.basicSkills, poomsae: v })} />
-            <StarRating label="겨루기(연결발차기)" value={form.basicSkills.sparring} onChange={(v) => update("basicSkills", { ...form.basicSkills, sparring: v })} />
-            <StarRating label="기술발차기(격파)" value={form.basicSkills.breaking} onChange={(v) => update("basicSkills", { ...form.basicSkills, breaking: v })} />
+            <StarRating
+              label="기본기"
+              value={form.basicSkills.basics}
+              onChange={(v) =>
+                update("basicSkills", { ...form.basicSkills, basics: v })
+              }
+            />
+            <StarRating
+              label="품새"
+              value={form.basicSkills.poomsae}
+              onChange={(v) =>
+                update("basicSkills", { ...form.basicSkills, poomsae: v })
+              }
+            />
+            <StarRating
+              label="겨루기(연결발차기)"
+              value={form.basicSkills.sparring}
+              onChange={(v) =>
+                update("basicSkills", { ...form.basicSkills, sparring: v })
+              }
+            />
+            <StarRating
+              label="기술발차기(격파)"
+              value={form.basicSkills.breaking}
+              onChange={(v) =>
+                update("basicSkills", { ...form.basicSkills, breaking: v })
+              }
+            />
           </div>
         </Section>
 
         <Section title="태도 인성 영역 (별점 1~5)">
           <div className="space-y-3">
-            <StarRating label="집중력" value={form.attitude.concentration} onChange={(v) => update("attitude", { ...form.attitude, concentration: v })} />
-            <StarRating label="도전정신" value={form.attitude.challenge} onChange={(v) => update("attitude", { ...form.attitude, challenge: v })} />
-            <StarRating label="인사성" value={form.attitude.greeting} onChange={(v) => update("attitude", { ...form.attitude, greeting: v })} />
-            <StarRating label="자신감" value={form.attitude.confidence} onChange={(v) => update("attitude", { ...form.attitude, confidence: v })} />
+            <StarRating
+              label="집중력"
+              value={form.attitude.concentration}
+              onChange={(v) =>
+                update("attitude", { ...form.attitude, concentration: v })
+              }
+            />
+            <StarRating
+              label="도전정신"
+              value={form.attitude.challenge}
+              onChange={(v) =>
+                update("attitude", { ...form.attitude, challenge: v })
+              }
+            />
+            <StarRating
+              label="인사성"
+              value={form.attitude.greeting}
+              onChange={(v) =>
+                update("attitude", { ...form.attitude, greeting: v })
+              }
+            />
+            <StarRating
+              label="자신감"
+              value={form.attitude.confidence}
+              onChange={(v) =>
+                update("attitude", { ...form.attitude, confidence: v })
+              }
+            />
           </div>
         </Section>
 
         <Section title="생활 습관 영역 (별점 1~5)">
           <div className="space-y-3">
-            <StarRating label="복장상태" value={form.lifeHabits.uniform} onChange={(v) => update("lifeHabits", { ...form.lifeHabits, uniform: v })} />
-            <StarRating label="바른 언어 사용" value={form.lifeHabits.language} onChange={(v) => update("lifeHabits", { ...form.lifeHabits, language: v })} />
-            <StarRating label="정리 정돈" value={form.lifeHabits.organization} onChange={(v) => update("lifeHabits", { ...form.lifeHabits, organization: v })} />
-            <StarRating label="규칙 준수" value={form.lifeHabits.rules} onChange={(v) => update("lifeHabits", { ...form.lifeHabits, rules: v })} />
+            <StarRating
+              label="복장상태"
+              value={form.lifeHabits.uniform}
+              onChange={(v) =>
+                update("lifeHabits", { ...form.lifeHabits, uniform: v })
+              }
+            />
+            <StarRating
+              label="바른 언어 사용"
+              value={form.lifeHabits.language}
+              onChange={(v) =>
+                update("lifeHabits", { ...form.lifeHabits, language: v })
+              }
+            />
+            <StarRating
+              label="정리 정돈"
+              value={form.lifeHabits.organization}
+              onChange={(v) =>
+                update("lifeHabits", { ...form.lifeHabits, organization: v })
+              }
+            />
+            <StarRating
+              label="규칙 준수"
+              value={form.lifeHabits.rules}
+              onChange={(v) =>
+                update("lifeHabits", { ...form.lifeHabits, rules: v })
+              }
+            />
           </div>
         </Section>
 
         <Section title="관장님 한줄 코멘트">
-          <textarea value={form.comment} onChange={(e) => update("comment", e.target.value)} rows={4} className="form-input leading-loose" placeholder="학생에게 전하고 싶은 메시지를 적어 주세요." />
+          <textarea
+            value={form.comment}
+            onChange={(e) => update("comment", e.target.value)}
+            rows={4}
+            className="form-input leading-loose"
+            placeholder="학생에게 전하고 싶은 메시지를 적어 주세요."
+          />
         </Section>
 
         <div className="flex flex-col sm:flex-row gap-2 justify-between mt-6">
-          <button type="button" onClick={onDelete} className="px-4 py-2.5 border border-line text-point hover:bg-point hover:text-white transition">
+          <button
+            type="button"
+            onClick={onDelete}
+            className="px-4 py-2.5 border border-line text-point hover:bg-point hover:text-white transition"
+          >
             심사 기록 삭제
           </button>
           <div className="flex gap-2">
-            <button type="button" onClick={onClose} className="px-4 py-2.5 border border-line text-ink-soft hover:border-ink hover:text-ink">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2.5 border border-line text-ink-soft hover:border-ink hover:text-ink"
+            >
               취소
             </button>
-            <button type="submit" className="px-5 py-2.5 bg-ink hover:bg-ink/85 text-paper font-semibold inline-flex items-center justify-center gap-2 transition">
+            <button
+              type="submit"
+              className="px-5 py-2.5 bg-ink hover:bg-ink/85 text-paper font-semibold inline-flex items-center justify-center gap-2 transition"
+            >
               <Save size={16} /> 저장하기
             </button>
           </div>
@@ -846,16 +1101,30 @@ function ExamEditModal({
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="border-t border-line first:border-t-0 pt-5 first:pt-0 mt-5 first:mt-0">
-      <h4 className="text-xs font-semibold text-muted mb-3 tracking-wider uppercase">{title}</h4>
+      <h4 className="text-xs font-semibold text-muted mb-3 tracking-wider uppercase">
+        {title}
+      </h4>
       {children}
     </div>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block">
       <span className="block text-xs text-ink-soft mb-1.5">{label}</span>
