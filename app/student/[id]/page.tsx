@@ -2,7 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, ChevronDown, Download, User, X, Star } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ChevronDown,
+  Download,
+  User,
+  X,
+  Star,
+} from "lucide-react";
 import StarRating from "../../../components/StarRating";
 import Certificate from "../../../components/Certificate";
 import { findStudent, getStudentExams } from "../../../lib/storage";
@@ -26,9 +34,9 @@ function getNameWithJosa(fullName: string, isEnglishName?: boolean): string {
   const charCode = lastChar.charCodeAt(0);
 
   // 한글 범위 확인 (0xAC00 ~ 0xD7A3)
-  if (charCode >= 0xAC00 && charCode <= 0xD7A3) {
+  if (charCode >= 0xac00 && charCode <= 0xd7a3) {
     // 받침이 있는지 확인: (charCode - 0xAC00) % 28 !== 0
-    const hasFinalConsonant = (charCode - 0xAC00) % 28 !== 0;
+    const hasFinalConsonant = (charCode - 0xac00) % 28 !== 0;
     return hasFinalConsonant ? `${firstName}이의` : `${firstName}의`;
   }
 
@@ -51,7 +59,9 @@ export default function StudentResultPage() {
   useEffect(() => {
     (async () => {
       const pageStartTime = performance.now();
-      console.log(`🔍 [Student Page] Loading data for student ID: ${params.id}`);
+      console.log(
+        `🔍 [Student Page] Loading data for student ID: ${params.id}`,
+      );
 
       // 단일 학생과 심사 기록을 병렬로 로드
       const [s, examList] = await Promise.all([
@@ -63,8 +73,12 @@ export default function StudentResultPage() {
       setExams(examList || []);
 
       const totalTime = performance.now() - pageStartTime;
-      console.log(`✅ [Student Page] Total page load - ${totalTime.toFixed(2)}ms`);
-      console.log(`   Student: ${s?.name || "Not found"}, Exams: ${examList?.length || 0}`);
+      console.log(
+        `✅ [Student Page] Total page load - ${totalTime.toFixed(2)}ms`,
+      );
+      console.log(
+        `   Student: ${s?.name || "Not found"}, Exams: ${examList?.length || 0}`,
+      );
     })();
   }, [params.id]);
 
@@ -151,14 +165,20 @@ export default function StudentResultPage() {
           {/* 오른쪽: 텍스트 정보 */}
           <div className="lg:col-span-7 text-left">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-ink leading-tight break-keep">
-              {displayName}<br />성장을 기록합니다
+              {displayName}
+              <br />
+              성장을 기록합니다
             </h1>
 
             <p className="mt-6 text-base sm:text-lg text-ink-soft leading-relaxed break-keep">
-              안녕하세요 😊<br />
-              {displayName} 성장 과정을 기록한<br />
-              심사 영상을 확인하실 수 있는 공간입니다.<br />
-              {displayName} 변화와 발전 모습을<br />
+              안녕하세요 😊
+              <br />
+              {displayName} 성장 과정을 기록한
+              <br />
+              심사 영상을 확인하실 수 있는 공간입니다.
+              <br />
+              {displayName} 변화와 발전 모습을
+              <br />
               지속적으로 업로드하고 있습니다.
             </p>
 
@@ -178,16 +198,19 @@ export default function StudentResultPage() {
       </section>
 
       {/* 리포트 리스트 (Accordion) */}
-      <section
-        ref={reportRef}
-        className="max-w-5xl mx-auto px-6 lg:px-8 pb-16"
-      >
-        <h2 className="text-2xl font-semibold text-ink mb-5">월별 성장 리포트</h2>
+      <section ref={reportRef} className="max-w-5xl mx-auto px-6 lg:px-8 pb-16">
+        <h2 className="text-2xl font-semibold text-ink mb-5">
+          월별 성장 리포트
+        </h2>
 
         {exams.length === 0 ? (
           <div className="border border-[#DCDEE0] p-10 text-center">
-            <p className="text-ink-soft text-lg">첫 번째 심사를 기다리고 있습니다</p>
-            <p className="text-muted text-sm mt-2">심사 결과가 등록되면 이곳에 표시됩니다.</p>
+            <p className="text-ink-soft text-lg">
+              첫 번째 심사를 기다리고 있습니다
+            </p>
+            <p className="text-muted text-sm mt-2">
+              심사 결과가 등록되면 이곳에 표시됩니다.
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -198,6 +221,21 @@ export default function StudentResultPage() {
                 (exam.basicSkills?.poomsae || 0) +
                 (exam.basicSkills?.sparring || 0) +
                 (exam.basicSkills?.breaking || 0);
+              const isBasicSkillsEmpty =
+                !exam.basicSkills?.basics &&
+                !exam.basicSkills?.poomsae &&
+                !exam.basicSkills?.sparring &&
+                !exam.basicSkills?.breaking;
+              const isAttitudeEmpty =
+                !exam.attitude?.concentration &&
+                !exam.attitude?.challenge &&
+                !exam.attitude?.greeting &&
+                !exam.attitude?.confidence;
+              const isLifeHabitsEmpty =
+                !exam.lifeHabits?.uniform &&
+                !exam.lifeHabits?.language &&
+                !exam.lifeHabits?.organization &&
+                !exam.lifeHabits?.rules;
               const totalAttitude =
                 (exam.attitude?.concentration || 0) +
                 (exam.attitude?.challenge || 0) +
@@ -254,7 +292,11 @@ export default function StudentResultPage() {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <User size={24} strokeWidth={1} className="text-[#DCDEE0]" />
+                            <User
+                              size={24}
+                              strokeWidth={1}
+                              className="text-[#DCDEE0]"
+                            />
                           )}
                         </div>
 
@@ -264,7 +306,9 @@ export default function StudentResultPage() {
                           </h3>
                           <div className="mt-2 flex items-center gap-3 text-sm">
                             <span className="text-muted">현재</span>
-                            <span className="text-ink">{exam.currentGrade}</span>
+                            <span className="text-ink">
+                              {exam.currentGrade}
+                            </span>
                             <span className="text-muted">→</span>
                             <span className="text-muted">응심</span>
                             <span className="text-ink font-semibold">
@@ -282,7 +326,9 @@ export default function StudentResultPage() {
                               기본 수련
                             </h4>
                             <div className="text-xs text-muted tabular-nums">
-                              {totalBasicSkills}/20
+                              {isBasicSkillsEmpty
+                                ? "미응심"
+                                : `${totalBasicSkills}/20`}
                             </div>
                           </div>
                           <div className="space-y-2.5">
@@ -378,10 +424,15 @@ export default function StudentResultPage() {
 
                       {/* 별점 가이드 */}
                       <div className="pt-4 border-t border-[#DCDEE0]">
-                        <div className="text-xs font-medium text-muted mb-2.5">별점 평가 기준</div>
+                        <div className="text-xs font-medium text-muted mb-2.5">
+                          별점 평가 기준
+                        </div>
                         <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 lg:gap-1.5">
                           {[5, 4, 3, 2, 1].map((rating) => (
-                            <div key={rating} className="flex items-center gap-1.5">
+                            <div
+                              key={rating}
+                              className="flex items-center gap-1.5"
+                            >
                               <div className="flex shrink-0">
                                 {Array.from({ length: 5 }).map((_, i) => (
                                   <Star
@@ -407,7 +458,9 @@ export default function StudentResultPage() {
                       {/* 관장님 코멘트 */}
                       {exam.comment && (
                         <div className="pt-4 border-t border-[#DCDEE0]">
-                          <div className="text-xs font-medium text-muted mb-2.5">관장님 한줄 코멘트</div>
+                          <div className="text-xs font-medium text-muted mb-2.5">
+                            관장님 한줄 코멘트
+                          </div>
                           <p className="text-ink leading-loose whitespace-pre-line break-keep">
                             {exam.comment}
                           </p>
@@ -451,7 +504,11 @@ export default function StudentResultPage() {
             </div>
 
             <div className="overflow-x-auto no-scrollbar">
-              <Certificate ref={certRef} student={student} exam={selectedExam} />
+              <Certificate
+                ref={certRef}
+                student={student}
+                exam={selectedExam}
+              />
             </div>
 
             <div className="mt-4 flex flex-col sm:flex-row gap-2 justify-end">

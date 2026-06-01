@@ -276,9 +276,9 @@ export const newExamTemplate = (studentId: string): Exam => ({
   examDate: new Date().toISOString().split("T")[0],
   currentGrade: "10급" as Grade,
   targetGrade: "9급" as Grade,
-  basicSkills: { basics: 3, poomsae: 3, sparring: 3, breaking: 3 },
-  attitude: { concentration: 3, challenge: 3, greeting: 3, confidence: 3 },
-  lifeHabits: { uniform: 3, language: 3, organization: 3, rules: 3 },
+  basicSkills: { basics: 0, poomsae: 0, sparring: 0, breaking: 0 },
+  attitude: { concentration: 0, challenge: 0, greeting: 0, confidence: 0 },
+  lifeHabits: { uniform: 0, language: 0, organization: 0, rules: 0 },
   comment: "",
   passed: false,
 });
