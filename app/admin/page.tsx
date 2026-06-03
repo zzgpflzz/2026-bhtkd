@@ -27,7 +27,14 @@ import {
   compressImageDataURL,
   uploadImageToStorage,
 } from "../../lib/storage";
-import { GRADES, type Student, type Exam, type Grade } from "../../lib/types";
+import {
+  CURRENT_GRADES,
+  TARGET_GRADES,
+  type Student,
+  type Exam,
+  type CurrentGrade,
+  type TargetGrade,
+} from "../../lib/types";
 import StarRating from "../../components/StarRating";
 
 const ADMIN_PASSWORD = "66009873";
@@ -948,11 +955,11 @@ function ExamEditModal({
               <select
                 value={form.currentGrade}
                 onChange={(e) =>
-                  update("currentGrade", e.target.value as Grade)
+                  update("currentGrade", e.target.value as CurrentGrade)
                 }
                 className="form-input"
               >
-                {GRADES.map((g) => (
+                {CURRENT_GRADES.map((g) => (
                   <option key={g} value={g}>
                     {g}
                   </option>
@@ -962,10 +969,12 @@ function ExamEditModal({
             <Field label="응심 급수">
               <select
                 value={form.targetGrade}
-                onChange={(e) => update("targetGrade", e.target.value as Grade)}
+                onChange={(e) =>
+                  update("targetGrade", e.target.value as TargetGrade)
+                }
                 className="form-input"
               >
-                {GRADES.map((g) => (
+                {TARGET_GRADES.map((g) => (
                   <option key={g} value={g}>
                     {g}
                   </option>

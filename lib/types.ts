@@ -1,6 +1,6 @@
 // 학생 및 심사 결과 데이터 타입 정의
-export type Grade =
-  | "10급"
+// 현재급수 (9급~1급 + 1~3품)
+export type CurrentGrade =
   | "9급"
   | "8급"
   | "7급"
@@ -10,7 +10,37 @@ export type Grade =
   | "3급"
   | "2급"
   | "1급"
-  | "품";
+  | "1품"
+  | "2품"
+  | "3품";
+
+// 응심급수 (36급~8급 짝수 + 7급~1급 전체)
+export type TargetGrade =
+  | "36급"
+  | "34급"
+  | "32급"
+  | "30급"
+  | "28급"
+  | "26급"
+  | "24급"
+  | "22급"
+  | "20급"
+  | "18급"
+  | "16급"
+  | "14급"
+  | "12급"
+  | "10급"
+  | "8급"
+  | "7급"
+  | "6급"
+  | "5급"
+  | "4급"
+  | "3급"
+  | "2급"
+  | "1급";
+
+// 하위 호환용 (기존 데이터)
+export type Grade = CurrentGrade | TargetGrade;
 
 export interface BasicSkillRating {
   basics: number; // 기본기
@@ -37,8 +67,8 @@ export interface Exam {
   id: string;
   studentId: string;
   examDate: string; // YYYY-MM-DD
-  currentGrade: Grade;
-  targetGrade: Grade;
+  currentGrade: CurrentGrade;
+  targetGrade: TargetGrade;
   basicSkills: BasicSkillRating;
   attitude: AttitudeRating;
   lifeHabits: LifeHabitRating;
@@ -57,8 +87,7 @@ export interface Student {
   isColorBelt?: boolean; // 유급자 여부 (admin 전용)
 }
 
-export const GRADES: Grade[] = [
-  "10급",
+export const CURRENT_GRADES: CurrentGrade[] = [
   "9급",
   "8급",
   "7급",
@@ -68,8 +97,38 @@ export const GRADES: Grade[] = [
   "3급",
   "2급",
   "1급",
-  "품",
+  "1품",
+  "2품",
+  "3품",
 ];
+
+export const TARGET_GRADES: TargetGrade[] = [
+  "36급",
+  "34급",
+  "32급",
+  "30급",
+  "28급",
+  "26급",
+  "24급",
+  "22급",
+  "20급",
+  "18급",
+  "16급",
+  "14급",
+  "12급",
+  "10급",
+  "8급",
+  "7급",
+  "6급",
+  "5급",
+  "4급",
+  "3급",
+  "2급",
+  "1급",
+];
+
+// 하위 호환용
+export const GRADES: Grade[] = [...CURRENT_GRADES, ...TARGET_GRADES];
 
 export const RATING_GUIDE: Record<number, string> = {
   5: "매우 뛰어남",
