@@ -633,7 +633,7 @@ function StudentDetail({
                     <div className="flex items-center gap-2 mb-1">
                       <Calendar size={14} className="text-muted" />
                       <span className="text-sm font-medium text-ink">
-                        {exam.examDate}
+                        {exam.examDate.slice(0, 7).replace("-", "년 ") + "월"}
                       </span>
                       <span
                         className={`text-[10px] px-1.5 py-0.5 ${exam.passed ? "border border-point text-point" : "border border-line text-muted"}`}
