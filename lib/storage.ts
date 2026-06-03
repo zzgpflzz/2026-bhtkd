@@ -1,4 +1,4 @@
-import { Student, Exam, Grade } from "@/lib/types";
+import { Student, Exam, CurrentGrade, TargetGrade } from "@/lib/types";
 
 // ─────────────────────────────────────────────
 // 클라이언트 캐시 (students / exams 완전 분리)
@@ -274,8 +274,8 @@ export const newExamTemplate = (studentId: string): Exam => ({
   id: `exam-${Date.now()}`,
   studentId,
   examDate: new Date().toISOString().split("T")[0],
-  currentGrade: "10급" as Grade,
-  targetGrade: "9급" as Grade,
+  currentGrade: "9급" as CurrentGrade,
+  targetGrade: "36급" as TargetGrade,
   basicSkills: { basics: 0, poomsae: 0, sparring: 0, breaking: 0 },
   attitude: { concentration: 0, challenge: 0, greeting: 0, confidence: 0 },
   lifeHabits: { uniform: 0, language: 0, organization: 0, rules: 0 },
