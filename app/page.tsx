@@ -175,16 +175,16 @@ export default function HomePage() {
       <section className="border-t border-line">
         <div className="max-w-6xl mx-auto px-6 lg:px-8 py-12 sm:py-14 grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-0">
           <Feature
-            t="투명한 심사"
-            b="기본동작 · 품새 · 발차기 · 태도. 4개 영역을 별점으로 명확하게 공개합니다."
+            t="별점심사"
+            b="태권도기술 · 태도 · 생활습관 영역을 별점으로 심사합니다."
           />
           <Feature
-            t="성장 레포트"
-            b="심사 결과를 성장 레포트로 확인하고, 다운로드 하세요."
+            t="성장레포트"
+            b="심사결과를 성장 레포트로 확인할 수 있습니다."
           />
           <Feature
             t="성장의 기록"
-            b="매 심사마다 누적되는 코멘트로 우리 아이의 변화를 살펴봅니다."
+            b="매 심사마다 누적되는 성장리포트 및 영상으로 우리 아이의 변화를 살펴볼 수 있습니다."
           />
         </div>
       </section>
@@ -296,31 +296,28 @@ export default function HomePage() {
             <div className="space-y-4">
               <div className="bg-[#F8F9FA] p-4 sm:p-5 rounded-sm">
                 <div className="text-sm sm:text-base font-semibold text-[#1A1A1A] mb-3">
-                  1품 과정
+                  1품
                 </div>
                 <div className="text-xs sm:text-sm text-[#6B7280] leading-relaxed">
-                  • 12급까지 심사 진행<br />
-                  • 총 12회의 심사를 통해 품새, 기본기, 발차기 기술 습득
+                  12급까지의 교육과정
                 </div>
               </div>
 
               <div className="bg-[#F8F9FA] p-4 sm:p-5 rounded-sm">
                 <div className="text-sm sm:text-base font-semibold text-[#1A1A1A] mb-3">
-                  2품 과정
+                  2품
                 </div>
                 <div className="text-xs sm:text-sm text-[#6B7280] leading-relaxed">
-                  • 24급까지 심사 진행<br />
-                  • 중급 품새와 겨루기 기술 심화 학습
+                  24급까지의 교육과정
                 </div>
               </div>
 
               <div className="bg-[#F8F9FA] p-4 sm:p-5 rounded-sm">
                 <div className="text-sm sm:text-base font-semibold text-[#1A1A1A] mb-3">
-                  3품 과정
+                  3품
                 </div>
                 <div className="text-xs sm:text-sm text-[#6B7280] leading-relaxed">
-                  • 36급까지 심사 진행<br />
-                  • 고급 품새와 격파 기술 완성
+                  36급까지의 교육과정
                 </div>
               </div>
             </div>

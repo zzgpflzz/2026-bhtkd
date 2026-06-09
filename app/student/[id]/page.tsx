@@ -189,7 +189,7 @@ export default function StudentResultPage() {
                 rel="noopener noreferrer"
                 className="mt-6 inline-flex items-center gap-2 bg-point hover:bg-point-dark transition text-white font-semibold px-8 py-3.5 text-sm shadow-md"
               >
-                영상, 사진 리포트 보기
+                영상보기
                 <ArrowRight size={16} />
               </a>
             )}
