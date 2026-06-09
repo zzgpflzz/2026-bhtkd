@@ -939,7 +939,7 @@ function ExamEditModal({
         </div>
 
         <Section title="기본 정보">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:items-end">
             <Field label="심사 월 (YYYY-MM)">
               <input
                 type="month"
