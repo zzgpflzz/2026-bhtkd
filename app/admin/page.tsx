@@ -28,12 +28,12 @@ import {
   uploadImageToStorage,
 } from "../../lib/storage";
 import {
-  CURRENT_GRADES,
-  TARGET_GRADES,
+  GRADES_BY_CATEGORY,
+  POOM_CATEGORIES,
   type Student,
   type Exam,
-  type CurrentGrade,
-  type TargetGrade,
+  type Grade,
+  type PoomCategory,
 } from "../../lib/types";
 import StarRating from "../../components/StarRating";
 
@@ -951,36 +951,16 @@ function ExamEditModal({
                 월 단위로만 선택됩니다
               </p>
             </Field>
-            <Field label="현재 급수">
-              <select
-                value={form.currentGrade}
-                onChange={(e) =>
-                  update("currentGrade", e.target.value as CurrentGrade)
-                }
-                className="form-input"
-              >
-                {CURRENT_GRADES.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="응심 급수">
-              <select
-                value={form.targetGrade}
-                onChange={(e) =>
-                  update("targetGrade", e.target.value as TargetGrade)
-                }
-                className="form-input"
-              >
-                {TARGET_GRADES.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
-              </select>
-            </Field>
+            <GradeSelector
+              label="현재 급수"
+              value={form.currentGrade}
+              onChange={(v) => update("currentGrade", v)}
+            />
+            <GradeSelector
+              label="응심 급수"
+              value={form.targetGrade}
+              onChange={(v) => update("targetGrade", v)}
+            />
           </div>
           <div className="mt-3">
             <label className="inline-flex items-center gap-2">
@@ -1148,6 +1128,72 @@ function Section({
         {title}
       </h4>
       {children}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// 2단계 급수 선택 컴포넌트
+// ─────────────────────────────────────────────
+function GradeSelector({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: Grade) => void;
+}) {
+  // 현재 value에서 카테고리 추출
+  const detectCategory = (v: string): PoomCategory => {
+    if (v.startsWith("1품")) return "1품";
+    if (v.startsWith("2품")) return "2품";
+    if (v.startsWith("3품")) return "3품";
+    return "유급";
+  };
+
+  const [category, setCategory] = useState<PoomCategory>(detectCategory(value));
+
+  const handleCategoryChange = (cat: PoomCategory) => {
+    setCategory(cat);
+    const grades = GRADES_BY_CATEGORY[cat];
+    onChange(grades[0]);
+  };
+
+  const grades = GRADES_BY_CATEGORY[category];
+
+  return (
+    <div className="space-y-2">
+      <span className="block text-xs text-ink-soft">{label}</span>
+      {/* 1단계: 품 카테고리 버튼 */}
+      <div className="flex gap-1.5 flex-wrap">
+        {POOM_CATEGORIES.map((cat) => (
+          <button
+            key={cat}
+            type="button"
+            onClick={() => handleCategoryChange(cat)}
+            className={`text-xs px-3 py-1.5 border transition ${
+              category === cat
+                ? "bg-ink text-paper border-ink"
+                : "border-line text-muted hover:border-ink hover:text-ink"
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+      {/* 2단계: 급수 드롭다운 */}
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as Grade)}
+        className="form-input"
+      >
+        {grades.map((g) => (
+          <option key={g} value={g}>
+            {g}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

@@ -1,6 +1,8 @@
 // 학생 및 심사 결과 데이터 타입 정의
-// 현재급수 (9급~1급 + 1~3품)
-export type CurrentGrade =
+export type PoomCategory = "유급" | "1품" | "2품" | "3품";
+
+export type Grade =
+  // 유급 (9급~1급)
   | "9급"
   | "8급"
   | "7급"
@@ -10,37 +12,88 @@ export type CurrentGrade =
   | "3급"
   | "2급"
   | "1급"
-  | "1품"
-  | "2품"
-  | "3품";
+  // 1품 (2의 배수, 2급~12급)
+  | "1품 2급"
+  | "1품 4급"
+  | "1품 6급"
+  | "1품 8급"
+  | "1품 10급"
+  | "1품 12급"
+  // 2품 (2의 배수, 2급~24급)
+  | "2품 2급"
+  | "2품 4급"
+  | "2품 6급"
+  | "2품 8급"
+  | "2품 10급"
+  | "2품 12급"
+  | "2품 14급"
+  | "2품 16급"
+  | "2품 18급"
+  | "2품 20급"
+  | "2품 22급"
+  | "2품 24급"
+  // 3품 (2의 배수, 2급~36급)
+  | "3품 2급"
+  | "3품 4급"
+  | "3품 6급"
+  | "3품 8급"
+  | "3품 10급"
+  | "3품 12급"
+  | "3품 14급"
+  | "3품 16급"
+  | "3품 18급"
+  | "3품 20급"
+  | "3품 22급"
+  | "3품 24급"
+  | "3품 26급"
+  | "3품 28급"
+  | "3품 30급"
+  | "3품 32급"
+  | "3품 34급"
+  | "3품 36급";
 
-// 응심급수 (36급~8급 짝수 + 7급~1급 전체)
-export type TargetGrade =
-  | "36급"
-  | "34급"
-  | "32급"
-  | "30급"
-  | "28급"
-  | "26급"
-  | "24급"
-  | "22급"
-  | "20급"
-  | "18급"
-  | "16급"
-  | "14급"
-  | "12급"
-  | "10급"
-  | "8급"
-  | "7급"
-  | "6급"
-  | "5급"
-  | "4급"
-  | "3급"
-  | "2급"
-  | "1급";
+// 하위 호환용
+export type CurrentGrade = Grade;
+export type TargetGrade = Grade;
 
-// 하위 호환용 (기존 데이터)
-export type Grade = CurrentGrade | TargetGrade;
+export const GRADES_BY_CATEGORY: Record<PoomCategory, Grade[]> = {
+  유급: ["9급", "8급", "7급", "6급", "5급", "4급", "3급", "2급", "1급"],
+  "1품": ["1품 2급", "1품 4급", "1품 6급", "1품 8급", "1품 10급", "1품 12급"],
+  "2품": [
+    "2품 2급",
+    "2품 4급",
+    "2품 6급",
+    "2품 8급",
+    "2품 10급",
+    "2품 12급",
+    "2품 14급",
+    "2품 16급",
+    "2품 18급",
+    "2품 20급",
+    "2품 22급",
+    "2품 24급",
+  ],
+  "3품": [
+    "3품 2급",
+    "3품 4급",
+    "3품 6급",
+    "3품 8급",
+    "3품 10급",
+    "3품 12급",
+    "3품 14급",
+    "3품 16급",
+    "3품 18급",
+    "3품 20급",
+    "3품 22급",
+    "3품 24급",
+    "3품 26급",
+    "3품 28급",
+    "3품 30급",
+    "3품 32급",
+    "3품 34급",
+    "3품 36급",
+  ],
+};
 
 export interface BasicSkillRating {
   basics: number; // 기본기
@@ -87,48 +140,11 @@ export interface Student {
   isColorBelt?: boolean; // 유급자 여부 (admin 전용)
 }
 
-export const CURRENT_GRADES: CurrentGrade[] = [
-  "9급",
-  "8급",
-  "7급",
-  "6급",
-  "5급",
-  "4급",
-  "3급",
-  "2급",
-  "1급",
-  "1품",
-  "2품",
-  "3품",
-];
+export const CURRENT_GRADES: Grade[] = Object.values(GRADES_BY_CATEGORY).flat();
+export const TARGET_GRADES: Grade[] = Object.values(GRADES_BY_CATEGORY).flat();
+export const GRADES: Grade[] = Object.values(GRADES_BY_CATEGORY).flat();
 
-export const TARGET_GRADES: TargetGrade[] = [
-  "36급",
-  "34급",
-  "32급",
-  "30급",
-  "28급",
-  "26급",
-  "24급",
-  "22급",
-  "20급",
-  "18급",
-  "16급",
-  "14급",
-  "12급",
-  "10급",
-  "8급",
-  "7급",
-  "6급",
-  "5급",
-  "4급",
-  "3급",
-  "2급",
-  "1급",
-];
-
-// 하위 호환용
-export const GRADES: Grade[] = [...CURRENT_GRADES, ...TARGET_GRADES];
+export const POOM_CATEGORIES: PoomCategory[] = ["유급", "1품", "2품", "3품"];
 
 export const RATING_GUIDE: Record<number, string> = {
   5: "매우 뛰어남",
