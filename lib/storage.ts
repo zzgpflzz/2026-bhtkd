@@ -1,4 +1,11 @@
-import { Student, Exam, CurrentGrade, TargetGrade } from "@/lib/types";
+import {
+  Student,
+  Exam,
+  CurrentGrade,
+  TargetGrade,
+  AttendanceStudent,
+  AttendanceRecord,
+} from "@/lib/types";
 
 // ─────────────────────────────────────────────
 // 클라이언트 캐시 (students / exams 완전 분리)
@@ -341,3 +348,308 @@ export async function uploadImageToStorage(
   const data = await res.json();
   return data.url;
 }
+
+// ─────────────────────────────────────────────
+// 출석체크 원생 관리 (attendanceStudents)
+// ─────────────────────────────────────────────
+let attendanceStudentsCache: AttendanceStudent[] | null = null;
+let attendanceStudentsCachedAt = 0;
+
+function invalidateAttendanceStudentsCache() {
+  attendanceStudentsCache = null;
+  attendanceStudentsCachedAt = 0;
+}
+
+export async function loadAttendanceStudents(
+  force = false,
+): Promise<AttendanceStudent[]> {
+  if (
+    !force &&
+    attendanceStudentsCache !== null &&
+    Date.now() - attendanceStudentsCachedAt < CACHE_TTL
+  ) {
+    return attendanceStudentsCache;
+  }
+  try {
+    const res = await fetch("/api/attendance?type=students", {
+      next: { revalidate: 30 },
+    });
+    if (!res.ok) return attendanceStudentsCache ?? [];
+    const data = await res.json();
+    const list = Array.isArray(data) ? (data as AttendanceStudent[]) : [];
+    attendanceStudentsCache = list;
+    attendanceStudentsCachedAt = Date.now();
+    return list;
+  } catch (e) {
+    console.error("[loadAttendanceStudents]", e);
+    return attendanceStudentsCache ?? [];
+  }
+}
+
+export async function upsertAttendanceStudent(
+  student: AttendanceStudent,
+): Promise<AttendanceStudent[]> {
+  const base = attendanceStudentsCache ?? (await loadAttendanceStudents());
+  const next = [...base];
+  const idx = next.findIndex((s) => s.id === student.id);
+  if (idx >= 0) next[idx] = student;
+  else next.push(student);
+
+  let res: Response;
+  try {
+    res = await fetch(
+      `/api/attendance?type=students&id=${encodeURIComponent(student.id)}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(student),
+      },
+    );
+  } catch (e) {
+    invalidateAttendanceStudentsCache();
+    console.error("[upsertAttendanceStudent] network error", e);
+    throw new Error("원생 저장 실패: 네트워크 오류");
+  }
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    invalidateAttendanceStudentsCache();
+    console.error("[upsertAttendanceStudent] HTTP", res.status, txt);
+    throw new Error(`원생 저장 실패 (${res.status})`);
+  }
+
+  attendanceStudentsCache = next;
+  attendanceStudentsCachedAt = Date.now();
+  return next;
+}
+
+export async function deleteAttendanceStudent(
+  id: string,
+): Promise<AttendanceStudent[]> {
+  const base = attendanceStudentsCache ?? (await loadAttendanceStudents());
+  const next = base.filter((s) => s.id !== id);
+
+  let res: Response;
+  try {
+    res = await fetch(
+      `/api/attendance?type=students&id=${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    );
+  } catch (e) {
+    invalidateAttendanceStudentsCache();
+    console.error("[deleteAttendanceStudent] network error", e);
+    throw new Error("원생 삭제 실패: 네트워크 오류");
+  }
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    invalidateAttendanceStudentsCache();
+    console.error("[deleteAttendanceStudent] HTTP", res.status, txt);
+    throw new Error(`원생 삭제 실패 (${res.status})`);
+  }
+
+  attendanceStudentsCache = next;
+  attendanceStudentsCachedAt = Date.now();
+  return next;
+}
+
+// ─────────────────────────────────────────────
+// 출석 기록 (attendanceRecords)
+// ─────────────────────────────────────────────
+let attendanceRecordsCache: AttendanceRecord[] | null = null;
+let attendanceRecordsCachedAt = 0;
+
+function invalidateAttendanceRecordsCache() {
+  attendanceRecordsCache = null;
+  attendanceRecordsCachedAt = 0;
+}
+
+export async function loadAttendanceRecords(
+  force = false,
+): Promise<AttendanceRecord[]> {
+  if (
+    !force &&
+    attendanceRecordsCache !== null &&
+    Date.now() - attendanceRecordsCachedAt < CACHE_TTL
+  ) {
+    return attendanceRecordsCache;
+  }
+  try {
+    const res = await fetch("/api/attendance?type=records", {
+      next: { revalidate: 30 },
+    });
+    if (!res.ok) return attendanceRecordsCache ?? [];
+    const data = await res.json();
+    const list = Array.isArray(data) ? (data as AttendanceRecord[]) : [];
+    attendanceRecordsCache = list;
+    attendanceRecordsCachedAt = Date.now();
+    return list;
+  } catch (e) {
+    console.error("[loadAttendanceRecords]", e);
+    return attendanceRecordsCache ?? [];
+  }
+}
+
+export async function upsertAttendanceRecord(
+  record: AttendanceRecord,
+): Promise<AttendanceRecord[]> {
+  const base = attendanceRecordsCache ?? (await loadAttendanceRecords());
+  const next = [...base];
+  const idx = next.findIndex((r) => r.id === record.id);
+  if (idx >= 0) next[idx] = record;
+  else next.push(record);
+
+  let res: Response;
+  try {
+    res = await fetch(
+      `/api/attendance?type=records&id=${encodeURIComponent(record.id)}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(record),
+      },
+    );
+  } catch (e) {
+    invalidateAttendanceRecordsCache();
+    console.error("[upsertAttendanceRecord] network error", e);
+    throw new Error("출석 기록 저장 실패: 네트워크 오류");
+  }
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    invalidateAttendanceRecordsCache();
+    console.error("[upsertAttendanceRecord] HTTP", res.status, txt);
+    throw new Error(`출석 기록 저장 실패 (${res.status})`);
+  }
+
+  attendanceRecordsCache = next;
+  attendanceRecordsCachedAt = Date.now();
+  return next;
+}
+
+export async function bulkUpsertAttendanceRecords(
+  records: AttendanceRecord[],
+): Promise<AttendanceRecord[]> {
+  let res: Response;
+  try {
+    res = await fetch(`/api/attendance?type=records&bulk=true`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(records),
+    });
+  } catch (e) {
+    invalidateAttendanceRecordsCache();
+    console.error("[bulkUpsertAttendanceRecords] network error", e);
+    throw new Error("일괄 출석 저장 실패: 네트워크 오류");
+  }
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    invalidateAttendanceRecordsCache();
+    console.error("[bulkUpsertAttendanceRecords] HTTP", res.status, txt);
+    throw new Error(`일괄 출석 저장 실패 (${res.status})`);
+  }
+
+  invalidateAttendanceRecordsCache();
+  return await loadAttendanceRecords(true);
+}
+
+// ─────────────────────────────────────────────
+// 출석체크 헬퍼 함수
+// ─────────────────────────────────────────────
+
+// 생년월일로 나이 계산 (한국 나이)
+export function calculateAge(birthDate: string): number {
+  const today = new Date();
+  const birth = new Date(birthDate);
+  const age = today.getFullYear() - birth.getFullYear();
+  return age + 1; // 한국 나이
+}
+
+// 나이대 그룹 계산
+export function getAgeGroup(age: number): string {
+  if (age <= 7) return "유치부";
+  if (age <= 10) return "초등 저학년";
+  if (age <= 13) return "초등 고학년";
+  return "중고등부";
+}
+
+// 특정 날짜의 출석 기록 조회
+export async function getAttendanceRecordsByDate(
+  date: string,
+): Promise<AttendanceRecord[]> {
+  const records = await loadAttendanceRecords();
+  return records.filter((r) => r.date === date);
+}
+
+// 특정 월의 출석 기록 조회
+export async function getAttendanceRecordsByMonth(
+  year: number,
+  month: number,
+): Promise<AttendanceRecord[]> {
+  const records = await loadAttendanceRecords();
+  const prefix = `${year}-${String(month).padStart(2, "0")}`;
+  return records.filter((r) => r.date.startsWith(prefix));
+}
+
+// 출석왕 계산 (해당 월에 예정 등원일 모두 출석)
+export async function getPerfectAttendanceStudents(
+  year: number,
+  month: number,
+): Promise<AttendanceStudent[]> {
+  const students = await loadAttendanceStudents();
+  const records = await getAttendanceRecordsByMonth(year, month);
+
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const dayOfWeekMap: Record<number, string> = {
+    1: "월",
+    2: "화",
+    3: "수",
+    4: "목",
+    5: "금",
+    6: "토",
+  };
+
+  const perfectStudents: AttendanceStudent[] = [];
+
+  for (const student of students) {
+    // 해당 월에 예정된 등원일 계산
+    const expectedDays: string[] = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month - 1, day);
+      const dayOfWeek = date.getDay();
+      if (dayOfWeek >= 1 && dayOfWeek <= 6) {
+        const koreanDay = dayOfWeekMap[dayOfWeek];
+        if (koreanDay && student.attendanceDays.includes(koreanDay as any)) {
+          expectedDays.push(
+            `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+          );
+        }
+      }
+    }
+
+    if (expectedDays.length === 0) continue;
+
+    // 실제 출석 기록 확인
+    const studentRecords = records.filter((r) => r.studentId === student.id);
+    const presentDays = studentRecords
+      .filter((r) => r.status === "present")
+      .map((r) => r.date);
+
+    // 모든 예정일에 출석했는지 확인
+    const isPerfect = expectedDays.every((day) => presentDays.includes(day));
+    if (isPerfect) {
+      perfectStudents.push(student);
+    }
+  }
+
+  return perfectStudents;
+}
+
+export const newAttendanceStudentTemplate = (id?: string): AttendanceStudent => ({
+  id: id || `att-student-${Date.now()}`,
+  name: "",
+  birthDate: "",
+  attendanceDays: [],
+  createdAt: new Date().toISOString(),
+});

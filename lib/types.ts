@@ -153,3 +153,28 @@ export const RATING_GUIDE: Record<number, string> = {
   2: "연습이 필요해요",
   1: "꾸준한 노력이 필요해요",
 };
+
+// ─────────────────────────────────────────────
+// 출석체크 시스템 타입 정의
+// ─────────────────────────────────────────────
+
+export type DayOfWeek = "월" | "화" | "수" | "목" | "금" | "토";
+
+export interface AttendanceStudent {
+  id: string;
+  name: string;
+  birthDate: string; // YYYY-MM-DD (나이 자동 계산용)
+  attendanceDays: DayOfWeek[]; // 등원 요일 (복수 선택 가능)
+  createdAt: string; // ISO 8601
+}
+
+export type AttendanceStatus = "present" | "absent";
+
+export interface AttendanceRecord {
+  id: string;
+  studentId: string;
+  date: string; // YYYY-MM-DD
+  status: AttendanceStatus;
+  reason?: string; // 결석 사유 (결석일 때만)
+  recordedAt: string; // ISO 8601
+}

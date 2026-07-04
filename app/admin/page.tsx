@@ -307,6 +307,12 @@ export default function AdminPage() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
+            <a
+              href="/attendance"
+              className="text-sm px-4 py-2 bg-point hover:bg-point-dark text-white font-semibold transition"
+            >
+              출석체크
+            </a>
             <button
               onClick={handleLogout}
               className="text-xs px-3 py-1.5 border border-line text-muted hover:border-ink hover:text-ink transition"
