@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { Award, Trophy } from "lucide-react";
 import {
   getPerfectAttendanceStudents,
-  calculateAge,
-  getAgeGroup,
+  calculateGrade,
+  getGradeOrder,
 } from "@/lib/storage";
 import type { AttendanceStudent } from "@/lib/types";
 
@@ -39,21 +39,19 @@ export default function PerfectAttendancePage() {
     }
   }
 
-  // 나이대별 그룹화
+  // 학년별 그룹화
   const groupedStudents = students.reduce(
     (acc, student) => {
-      const age = calculateAge(student.birthDate);
-      const group = getAgeGroup(age);
-      if (!acc[group]) acc[group] = [];
-      acc[group].push({ ...student, age });
+      const grade = calculateGrade(student.birthYear);
+      if (!acc[grade]) acc[grade] = [];
+      acc[grade].push({ ...student, grade });
       return acc;
     },
-    {} as Record<string, Array<AttendanceStudent & { age: number }>>,
+    {} as Record<string, Array<AttendanceStudent & { grade: string }>>,
   );
 
   const sortedGroups = Object.entries(groupedStudents).sort((a, b) => {
-    const order = ["유치부", "초등 저학년", "초등 고학년", "중고등부"];
-    return order.indexOf(a[0]) - order.indexOf(b[0]);
+    return getGradeOrder(a[0]) - getGradeOrder(b[0]);
   });
 
   if (loading) {
@@ -140,7 +138,7 @@ export default function PerfectAttendancePage() {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {groupStudents
-                    .sort((a, b) => a.age - b.age)
+                    .sort((a, b) => parseInt(b.birthYear) - parseInt(a.birthYear))
                     .map((student) => (
                       <div
                         key={student.id}
@@ -155,7 +153,7 @@ export default function PerfectAttendancePage() {
                               {student.name}
                             </div>
                             <div className="text-sm text-muted">
-                              {student.age}세 · 등원 요일:{" "}
+                              {student.birthYear}년생 · 등원 요일:{" "}
                               {student.attendanceDays.join(", ")}
                             </div>
                           </div>

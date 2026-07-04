@@ -6,7 +6,8 @@ import { Printer } from "lucide-react";
 import {
   loadAttendanceStudents,
   getAttendanceRecordsByMonth,
-  calculateAge,
+  calculateGrade,
+  getGradeOrder,
 } from "@/lib/storage";
 import type { AttendanceStudent, AttendanceRecord, DayOfWeek } from "@/lib/types";
 
@@ -76,7 +77,7 @@ export default function MonthlyAttendancePage() {
   // 학생별 출석 데이터 매핑
   const studentRows = students
     .map((student) => {
-      const age = calculateAge(student.birthDate);
+      const grade = calculateGrade(student.birthYear);
       const studentRecords = records.filter((r) => r.studentId === student.id);
       const attendanceMap: Record<
         string,
@@ -86,9 +87,9 @@ export default function MonthlyAttendancePage() {
         attendanceMap[r.date] = { status: r.status, reason: r.reason };
       });
 
-      return { student, age, attendanceMap };
+      return { student, grade, attendanceMap };
     })
-    .sort((a, b) => a.age - b.age);
+    .sort((a, b) => getGradeOrder(a.grade) - getGradeOrder(b.grade) || parseInt(b.student.birthYear) - parseInt(a.student.birthYear));
 
   if (loading) {
     return (
@@ -138,7 +139,7 @@ export default function MonthlyAttendancePage() {
             </select>
             <button
               onClick={handlePrint}
-              className="bg-point hover:bg-point-dark text-white px-4 py-2 text-sm font-semibold inline-flex items-center gap-2 transition"
+              className="bg-point hover:bg-point-dark text-white px-4 py-2 text-sm font-semibold inline-flex items-center gap-2 transition whitespace-nowrap"
             >
               <Printer size={16} />
               인쇄
@@ -148,8 +149,7 @@ export default function MonthlyAttendancePage() {
 
         {/* 인쇄용 헤더 (화면에는 숨김) */}
         <div className="print-only text-center mb-6">
-          <h1 className="text-2xl font-bold mb-2">백호태권도 월간 출석부</h1>
-          <p className="text-lg">
+          <p className="text-lg font-bold">
             {selectedYear}년 {selectedMonth}월
           </p>
         </div>
@@ -168,7 +168,7 @@ export default function MonthlyAttendancePage() {
                     이름
                   </th>
                   <th className="border border-line px-2 py-2 text-center font-semibold">
-                    나이
+                    학년
                   </th>
                   <th className="border border-line px-2 py-2 text-center font-semibold">
                     등원요일
@@ -185,13 +185,13 @@ export default function MonthlyAttendancePage() {
                 </tr>
               </thead>
               <tbody>
-                {studentRows.map(({ student, age, attendanceMap }) => (
+                {studentRows.map(({ student, grade, attendanceMap }) => (
                   <tr key={student.id}>
                     <td className="border border-line px-2 py-2 font-medium">
                       {student.name}
                     </td>
-                    <td className="border border-line px-2 py-2 text-center">
-                      {age}
+                    <td className="border border-line px-2 py-2 text-center text-xs">
+                      {grade}
                     </td>
                     <td className="border border-line px-2 py-2 text-center text-[10px]">
                       {student.attendanceDays.join(",")}

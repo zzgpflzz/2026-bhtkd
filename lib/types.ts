@@ -163,7 +163,7 @@ export type DayOfWeek = "월" | "화" | "수" | "목" | "금" | "토";
 export interface AttendanceStudent {
   id: string;
   name: string;
-  birthDate: string; // YYYY-MM-DD (나이 자동 계산용)
+  birthYear: string; // YYYY (출생 연도, 학년 자동 계산용)
   attendanceDays: DayOfWeek[]; // 등원 요일 (복수 선택 가능)
   createdAt: string; // ISO 8601
 }

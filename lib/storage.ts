@@ -558,20 +558,26 @@ export async function bulkUpsertAttendanceRecords(
 // 출석체크 헬퍼 함수
 // ─────────────────────────────────────────────
 
-// 생년월일로 나이 계산 (한국 나이)
-export function calculateAge(birthDate: string): number {
-  const today = new Date();
-  const birth = new Date(birthDate);
-  const age = today.getFullYear() - birth.getFullYear();
-  return age + 1; // 한국 나이
+// 출생 연도로 학년 계산 (2019년생 = 1학년 기준)
+export function calculateGrade(birthYear: string): string {
+  const year = parseInt(birthYear, 10);
+  if (isNaN(year)) return "미상";
+
+  // 2019년생이 1학년 기준
+  const grade = 2019 - year + 1;
+
+  if (grade < 1) return "유치부";
+  if (grade >= 1 && grade <= 6) return `${grade}학년`;
+  return "중고등부";
 }
 
-// 나이대 그룹 계산
-export function getAgeGroup(age: number): string {
-  if (age <= 7) return "유치부";
-  if (age <= 10) return "초등 저학년";
-  if (age <= 13) return "초등 고학년";
-  return "중고등부";
+// 학년 정렬 순서 계산
+export function getGradeOrder(grade: string): number {
+  if (grade === "유치부") return 0;
+  if (grade === "중고등부") return 99;
+  const match = grade.match(/(\d+)학년/);
+  if (match) return parseInt(match[1], 10);
+  return 100;
 }
 
 // 특정 날짜의 출석 기록 조회
@@ -649,7 +655,7 @@ export async function getPerfectAttendanceStudents(
 export const newAttendanceStudentTemplate = (id?: string): AttendanceStudent => ({
   id: id || `att-student-${Date.now()}`,
   name: "",
-  birthDate: "",
+  birthYear: "",
   attendanceDays: [],
   createdAt: new Date().toISOString(),
 });

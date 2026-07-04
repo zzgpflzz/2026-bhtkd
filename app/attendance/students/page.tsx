@@ -8,8 +8,8 @@ import {
   upsertAttendanceStudent,
   deleteAttendanceStudent,
   newAttendanceStudentTemplate,
-  calculateAge,
-  getAgeGroup,
+  calculateGrade,
+  getGradeOrder,
 } from "@/lib/storage";
 import type { AttendanceStudent, DayOfWeek } from "@/lib/types";
 
@@ -62,8 +62,8 @@ export default function AttendanceStudentsPage() {
       alert("이름을 입력해 주세요.");
       return;
     }
-    if (!editingStudent.birthDate) {
-      alert("생년월일을 입력해 주세요.");
+    if (!editingStudent.birthYear || !/^\d{4}$/.test(editingStudent.birthYear)) {
+      alert("출생 연도를 4자리로 입력해 주세요. (예: 2019)");
       return;
     }
     if (editingStudent.attendanceDays.length === 0) {
@@ -106,21 +106,19 @@ export default function AttendanceStudentsPage() {
     setEditingStudent({ ...editingStudent, attendanceDays: newDays });
   }
 
-  // 나이대별 그룹화
+  // 학년별 그룹화
   const groupedStudents = students.reduce(
     (acc, student) => {
-      const age = calculateAge(student.birthDate);
-      const group = getAgeGroup(age);
-      if (!acc[group]) acc[group] = [];
-      acc[group].push({ ...student, age });
+      const grade = calculateGrade(student.birthYear);
+      if (!acc[grade]) acc[grade] = [];
+      acc[grade].push({ ...student, grade });
       return acc;
     },
-    {} as Record<string, Array<AttendanceStudent & { age: number }>>,
+    {} as Record<string, Array<AttendanceStudent & { grade: string }>>,
   );
 
   const sortedGroups = Object.entries(groupedStudents).sort((a, b) => {
-    const order = ["유치부", "초등 저학년", "초등 고학년", "중고등부"];
-    return order.indexOf(a[0]) - order.indexOf(b[0]);
+    return getGradeOrder(a[0]) - getGradeOrder(b[0]);
   });
 
   if (loading) {
@@ -164,7 +162,7 @@ export default function AttendanceStudentsPage() {
                 </h2>
                 <div className="space-y-3">
                   {groupStudents
-                    .sort((a, b) => a.age - b.age)
+                    .sort((a, b) => parseInt(b.birthYear) - parseInt(a.birthYear))
                     .map((student) => (
                       <div
                         key={student.id}
@@ -176,7 +174,7 @@ export default function AttendanceStudentsPage() {
                               {student.name}
                             </span>
                             <span className="text-xs text-muted">
-                              {student.age}세
+                              {student.birthYear}년생
                             </span>
                           </div>
                           <div className="text-sm text-muted">
@@ -250,22 +248,26 @@ export default function AttendanceStudentsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-ink mb-2">
-                  생년월일
+                  출생 연도
                 </label>
                 <input
-                  type="date"
-                  value={editingStudent.birthDate}
-                  onChange={(e) =>
+                  type="text"
+                  inputMode="numeric"
+                  value={editingStudent.birthYear}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, "").slice(0, 4);
                     setEditingStudent({
                       ...editingStudent,
-                      birthDate: e.target.value,
-                    })
-                  }
+                      birthYear: value,
+                    });
+                  }}
+                  placeholder="2019"
+                  maxLength={4}
                   className="form-input w-full"
                 />
-                {editingStudent.birthDate && (
+                {editingStudent.birthYear && editingStudent.birthYear.length === 4 && (
                   <p className="text-xs text-muted mt-2">
-                    현재 나이: {calculateAge(editingStudent.birthDate)}세
+                    학년: {calculateGrade(editingStudent.birthYear)}
                   </p>
                 )}
               </div>

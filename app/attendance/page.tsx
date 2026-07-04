@@ -7,8 +7,8 @@ import {
   loadAttendanceStudents,
   loadAttendanceRecords,
   bulkUpsertAttendanceRecords,
-  calculateAge,
-  getAgeGroup,
+  calculateGrade,
+  getGradeOrder,
 } from "@/lib/storage";
 import type { AttendanceStudent, AttendanceRecord, DayOfWeek } from "@/lib/types";
 
@@ -20,6 +20,7 @@ export default function AttendancePage() {
   const [saving, setSaving] = useState(false);
   const [absentStudents, setAbsentStudents] = useState<Set<string>>(new Set());
   const [absentReasons, setAbsentReasons] = useState<Record<string, string>>({});
+  const [gradeFilter, setGradeFilter] = useState<string>("전체");
 
   const today = new Date().toISOString().split("T")[0];
   const todayDayOfWeek = (() => {
@@ -139,22 +140,29 @@ export default function AttendancePage() {
     }
   }
 
-  // 나이대별 그룹화
+  // 학년별 그룹화
   const groupedStudents = students.reduce(
     (acc, student) => {
-      const age = calculateAge(student.birthDate);
-      const group = getAgeGroup(age);
-      if (!acc[group]) acc[group] = [];
-      acc[group].push({ ...student, age });
+      const grade = calculateGrade(student.birthYear);
+      if (!acc[grade]) acc[grade] = [];
+      acc[grade].push({ ...student, grade });
       return acc;
     },
-    {} as Record<string, Array<AttendanceStudent & { age: number }>>,
+    {} as Record<string, Array<AttendanceStudent & { grade: string }>>,
   );
 
-  const sortedGroups = Object.entries(groupedStudents).sort((a, b) => {
-    const order = ["유치부", "초등 저학년", "초등 고학년", "중고등부"];
-    return order.indexOf(a[0]) - order.indexOf(b[0]);
+  // 학년 필터 적용
+  const filteredGroups = Object.entries(groupedStudents).filter(([grade]) => {
+    if (gradeFilter === "전체") return true;
+    return grade === gradeFilter;
   });
+
+  const sortedGroups = filteredGroups.sort((a, b) => {
+    return getGradeOrder(a[0]) - getGradeOrder(b[0]);
+  });
+
+  // 필터 옵션 생성
+  const gradeOptions = ["전체", ...Object.keys(groupedStudents).sort((a, b) => getGradeOrder(a) - getGradeOrder(b))];
 
   if (loading) {
     return (
@@ -183,13 +191,29 @@ export default function AttendancePage() {
 
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* 헤더 */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-ink mb-2">
-            오늘의 출석체크
-          </h1>
-          <p className="text-sm text-muted">
-            {today} ({todayDayOfWeek}요일) · 등원 예정 {students.length}명
-          </p>
+        <div className="mb-6 flex items-end justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-ink mb-2">
+              오늘의 출석체크
+            </h1>
+            <p className="text-sm text-muted">
+              {today} ({todayDayOfWeek}요일) · 등원 예정 {students.length}명
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-muted">학년 필터:</label>
+            <select
+              value={gradeFilter}
+              onChange={(e) => setGradeFilter(e.target.value)}
+              className="form-input text-sm py-1.5"
+            >
+              {gradeOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {students.length === 0 ? (
@@ -208,7 +232,7 @@ export default function AttendancePage() {
                   </h2>
                   <div className="space-y-3">
                     {groupStudents
-                      .sort((a, b) => a.age - b.age)
+                      .sort((a, b) => parseInt(b.birthYear) - parseInt(a.birthYear))
                       .map((student) => {
                         const isAbsent = absentStudents.has(student.id);
                         const alreadyRecorded = todayRecords.some(
@@ -245,7 +269,7 @@ export default function AttendancePage() {
                                     {student.name}
                                   </span>
                                   <span className="text-xs text-muted">
-                                    {student.age}세
+                                    {student.birthYear}년생
                                   </span>
                                   {alreadyRecorded && (
                                     <span className="text-xs bg-gray-200 px-2 py-1">
