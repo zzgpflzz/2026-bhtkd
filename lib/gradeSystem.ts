@@ -1,6 +1,30 @@
 import { Grade, GRADES } from "./types";
 
 /**
+ * 급수별 띠 색상 매핑
+ */
+const BELT_COLORS: Record<string, string> = {
+  "9급": "흰띠",
+  "8급": "노란띠",
+  "7급": "초록띠",
+  "6급": "파란띠",
+  "5급": "밤띠",
+  "4급": "보라띠",
+  "3급": "주황띠",
+  "2급": "빨강띠",
+  "1급": "빨강띠",
+};
+
+/**
+ * 급수에 띠 색상 추가
+ * 예: "9급" → "9급 흰띠", "1품 2급" → "1품 2급" (유품은 그대로)
+ */
+export function getGradeWithBelt(grade: Grade): string {
+  const beltColor = BELT_COLORS[grade];
+  return beltColor ? `${grade} ${beltColor}` : grade;
+}
+
+/**
  * 다음 급수 계산
  * 예: 9급 → 8급, 1급 → 1품 2급, 1품 12급 → 2품 2급
  */

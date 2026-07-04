@@ -1,6 +1,7 @@
 import html2canvas from "html2canvas";
 import JSZip from "jszip";
 import { Grade } from "./types";
+import { getGradeWithBelt } from "./gradeSystem";
 
 export interface CertificateData {
   name: string;
@@ -90,7 +91,7 @@ export function createCertificateElement(data: CertificateData): HTMLDivElement 
       ">
         <span style="display: inline-block; width: 220px; text-align: justify; text-align-last: justify;">현재 급수</span>
         <span>:</span>
-        <span>${data.currentGrade}</span>
+        <span>${getGradeWithBelt(data.currentGrade)}</span>
       </div>
 
       <!-- 승급 급수 -->
@@ -108,7 +109,7 @@ export function createCertificateElement(data: CertificateData): HTMLDivElement 
       ">
         <span style="display: inline-block; width: 220px; text-align: justify; text-align-last: justify;">승급 급수</span>
         <span>:</span>
-        <span>${data.targetGrade}</span>
+        <span>${getGradeWithBelt(data.targetGrade)}</span>
       </div>
 
       <!-- 날짜 -->
