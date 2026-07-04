@@ -13,10 +13,10 @@ import {
   Image as ImageIcon,
   Eye,
   Calendar,
+  Award,
 } from "lucide-react";
 import {
   loadStudents,
-  findStudent,
   upsertStudent,
   deleteStudent,
   upsertExam,
@@ -26,7 +26,13 @@ import {
   getStudentExams,
   compressImageDataURL,
   uploadImageToStorage,
+  getStudentCurrentGrade,
 } from "../../lib/storage";
+import { getNextGrade, formatToday } from "../../lib/gradeSystem";
+import {
+  downloadMultipleCertificates,
+  type CertificateData,
+} from "../../lib/certificateGenerator";
 import {
   GRADES_BY_CATEGORY,
   POOM_CATEGORIES,
@@ -93,6 +99,8 @@ export default function AdminPage() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
+  const [selectedForCertificate, setSelectedForCertificate] = useState<Set<string>>(new Set());
+  const [generatingCertificates, setGeneratingCertificates] = useState(false);
 
   useEffect(() => {
     const savedAuth = sessionStorage.getItem("baekho-admin-auth");
@@ -203,13 +211,94 @@ export default function AdminPage() {
     }
   };
 
+  // 상장 생성: 체크박스 토글
+  const toggleCertificateSelect = (id: string) => {
+    const next = new Set(selectedForCertificate);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    setSelectedForCertificate(next);
+  };
+
+  // 상장 생성: 전체 선택/해제
+  const toggleSelectAll = () => {
+    if (selectedForCertificate.size === filtered.length) {
+      setSelectedForCertificate(new Set());
+    } else {
+      setSelectedForCertificate(new Set(filtered.map((s) => s.id)));
+    }
+  };
+
+  // 상장 생성: 일괄 다운로드
+  const handleGenerateCertificates = async () => {
+    if (selectedForCertificate.size === 0) {
+      alert("상장을 생성할 학생을 선택해 주세요.");
+      return;
+    }
+
+    const confirmed = confirm(
+      `선택한 ${selectedForCertificate.size}명의 승급 상장을 생성하시겠습니까?`,
+    );
+    if (!confirmed) return;
+
+    setGeneratingCertificates(true);
+
+    try {
+      const selectedStudents = filtered.filter((s) =>
+        selectedForCertificate.has(s.id),
+      );
+
+      const certificatesData: CertificateData[] = await Promise.all(
+        selectedStudents.map(async (student) => {
+          const currentGrade = await getStudentCurrentGrade(student.id);
+          const targetGrade = getNextGrade(currentGrade);
+
+          return {
+            name: student.name,
+            currentGrade,
+            targetGrade,
+            date: formatToday(),
+            content: `태권도 ${targetGrade} 승급 인증`,
+          };
+        }),
+      );
+
+      // 순차 다운로드
+      await downloadMultipleCertificates(certificatesData);
+
+      alert(`${certificatesData.length}명의 상장이 다운로드되었습니다.`);
+      setSelectedForCertificate(new Set());
+    } catch (error) {
+      console.error("❌ Certificate generation error:", error);
+      alert("상장 생성에 실패했습니다: " + String(error));
+    } finally {
+      setGeneratingCertificates(false);
+    }
+  };
+
   const handleSaveExam = async (e: Exam) => {
     setEditingExam(null);
-    if (selectedStudent) {
-      setSelectedStudent({ ...selectedStudent });
-    }
     try {
       await upsertExam(e);
+
+      // ✅ 합격이면 학생의 currentGrade를 자동 업데이트
+      if (e.passed && selectedStudent) {
+        const updatedStudent = {
+          ...selectedStudent,
+          currentGrade: e.targetGrade, // 승급한 급수를 현재 급수로
+        };
+
+        // 학생 데이터 업데이트
+        await upsertStudent(updatedStudent);
+
+        // UI 업데이트
+        setSelectedStudent(updatedStudent);
+        setStudents(
+          students.map((s) => (s.id === updatedStudent.id ? updatedStudent : s)),
+        );
+      }
     } catch (error) {
       console.error("❌ Save exam error:", error);
       alert("심사 저장에 실패했습니다: " + String(error));
@@ -405,44 +494,89 @@ export default function AdminPage() {
                     </div>
                   ) : (
                     filtered.map((s) => (
-                      <button
+                      <div
                         key={s.id}
-                        onClick={() => setSelectedStudent(s)}
-                        className={`w-full p-4 border-b border-line last:border-b-0 text-left hover:bg-line-soft transition ${
+                        className={`w-full flex items-center gap-2 p-4 border-b border-line last:border-b-0 hover:bg-line-soft transition ${
                           selectedStudent?.id === s.id ? "bg-line-soft" : ""
                         }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 border border-line overflow-hidden flex items-center justify-center shrink-0">
-                            {s.photoUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={s.photoUrl}
-                                alt={s.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <ImageIcon
-                                size={16}
-                                strokeWidth={1.5}
-                                className="text-line"
-                              />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-ink text-sm">
-                              {s.name}
+                        <input
+                          type="checkbox"
+                          checked={selectedForCertificate.has(s.id)}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            toggleCertificateSelect(s.id);
+                          }}
+                          className="shrink-0"
+                        />
+                        <button
+                          onClick={() => setSelectedStudent(s)}
+                          className="flex-1 text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 border border-line overflow-hidden flex items-center justify-center shrink-0">
+                              {s.photoUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={s.photoUrl}
+                                  alt={s.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <ImageIcon
+                                  size={16}
+                                  strokeWidth={1.5}
+                                  className="text-line"
+                                />
+                              )}
                             </div>
-                            <div className="text-xs text-muted">
-                              {s.birthDate}
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-ink text-sm">
+                                {s.name}
+                              </div>
+                              <div className="text-xs text-muted">
+                                {s.birthDate}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </button>
+                        </button>
+                      </div>
                     ))
                   )}
                 </div>
               </div>
+
+              {/* 전체 선택/해제 */}
+              {filtered.length > 0 && (
+                <div className="border border-line border-t-0 px-4 py-2 flex items-center gap-2 text-xs text-muted">
+                  <input
+                    type="checkbox"
+                    checked={selectedForCertificate.size === filtered.length}
+                    onChange={toggleSelectAll}
+                  />
+                  <span>전체 선택</span>
+                  {selectedForCertificate.size > 0 && (
+                    <span className="ml-auto text-point font-semibold">
+                      {selectedForCertificate.size}명 선택됨
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* 상장 생성 버튼 */}
+              {selectedForCertificate.size > 0 && (
+                <button
+                  onClick={handleGenerateCertificates}
+                  disabled={generatingCertificates}
+                  className="w-full bg-point hover:bg-point-dark text-white font-semibold py-3 inline-flex items-center justify-center gap-2 transition disabled:opacity-50 mb-2"
+                >
+                  <Award size={16} />
+                  {generatingCertificates
+                    ? "상장 생성 중..."
+                    : `승급 인증 상장 만들기 (${selectedForCertificate.size}명)`}
+                </button>
+              )}
+
               <button
                 onClick={() => setEditingStudent(newStudentTemplate())}
                 className="w-full bg-ink hover:bg-ink/85 text-paper font-semibold py-3 inline-flex items-center justify-center gap-2 transition"

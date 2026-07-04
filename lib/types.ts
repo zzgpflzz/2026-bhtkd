@@ -138,6 +138,7 @@ export interface Student {
   isEnglishName?: boolean; // 영어 이름 여부 (true면 성 제거 안함)
   hasBlackBelt?: boolean; // 유품자 여부 (admin 전용)
   isColorBelt?: boolean; // 유급자 여부 (admin 전용)
+  currentGrade?: Grade; // 현재 급수 (상장 생성용)
 }
 
 export const CURRENT_GRADES: Grade[] = Object.values(GRADES_BY_CATEGORY).flat();

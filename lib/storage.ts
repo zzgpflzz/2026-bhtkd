@@ -659,3 +659,29 @@ export const newAttendanceStudentTemplate = (id?: string): AttendanceStudent => 
   attendanceDays: [],
   createdAt: new Date().toISOString(),
 });
+
+// ─────────────────────────────────────────────
+// 상장 생성용 헬퍼
+// ─────────────────────────────────────────────
+
+// 학생의 현재 급수 조회
+export async function getStudentCurrentGrade(
+  studentId: string,
+): Promise<CurrentGrade> {
+  // 1. Student 데이터에 currentGrade가 있으면 그것 사용
+  const student = await findStudent(studentId);
+  if (student?.currentGrade) {
+    return student.currentGrade;
+  }
+
+  // 2. 없으면 가장 최근 합격 심사의 targetGrade 사용
+  const exams = await getStudentExams(studentId);
+  const passedExams = exams.filter((e) => e.passed);
+
+  if (passedExams.length > 0) {
+    return passedExams[0].targetGrade;
+  }
+
+  // 3. 둘 다 없으면 기본 9급
+  return "9급" as CurrentGrade;
+}
