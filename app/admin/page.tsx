@@ -43,7 +43,7 @@ import {
 } from "../../lib/types";
 import StarRating from "../../components/StarRating";
 
-const ADMIN_PASSWORD = "66009873";
+const ADMIN_PASSWORD = "118!!*";
 
 // ─────────────────────────────────────────────
 // 학년 계산 유틸
