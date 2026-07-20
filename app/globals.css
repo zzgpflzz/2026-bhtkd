@@ -83,3 +83,20 @@ body {
 .form-input--accent:focus {
   border-color: var(--point);
 }
+
+/* 인쇄 스타일 */
+@media print {
+  .print\:hidden {
+    display: none !important;
+  }
+  .print\:block {
+    display: block !important;
+  }
+  body {
+    background: white;
+  }
+  /* 페이지 여백 최소화 */
+  @page {
+    margin: 1cm;
+  }
+}

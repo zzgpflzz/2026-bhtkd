@@ -397,6 +397,12 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-3">
             <a
+              href="/admin/vehicle"
+              className="text-sm px-4 py-2 border border-line hover:border-ink text-ink-soft hover:text-ink font-semibold transition"
+            >
+              차량 관리
+            </a>
+            <a
               href="/attendance"
               className="text-sm px-4 py-2 bg-point hover:bg-point-dark text-white font-semibold transition"
             >

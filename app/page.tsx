@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, X } from "lucide-react";
-import { findStudentByNameAndBirthDate } from "../lib/storage";
+import { ArrowRight, X, ChevronDown, ChevronUp } from "lucide-react";
+import { findStudentByNameAndBirthDate, findVehicleInfoByNameAndBirthDate, loadVehicleSchedules, getVehicleStatus } from "../lib/storage";
+import type { StudentVehicleInfo, VehicleSchedule } from "../lib/types";
 
 const BELT_SYSTEM = [
   { grade: "9급", name: "흰띠", color: "bg-white border-2 border-gray-300" },
@@ -19,6 +20,7 @@ const BELT_SYSTEM = [
 
 export default function HomePage() {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<"exam" | "vehicle">("exam");
   const [name, setName] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [error, setError] = useState("");
@@ -26,7 +28,8 @@ export default function HomePage() {
   const [showBeltModal, setShowBeltModal] = useState(false);
   const [showPoomModal, setShowPoomModal] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  // 심사 조회
+  const handleExamLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -43,7 +46,6 @@ export default function HomePage() {
       return;
     }
 
-    // 20150412 → 2015-04-12 (저장된 데이터 포맷과 일치)
     const formatted = `${birthDate.slice(0, 4)}-${birthDate.slice(4, 6)}-${birthDate.slice(6, 8)}`;
 
     const student = await findStudentByNameAndBirthDate(name, formatted);
@@ -59,7 +61,6 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-paper text-ink">
-      {/* ───────────── Top bar ───────────── */}
       <header className="border-b border-line">
         <div className="max-w-6xl mx-auto px-6 lg:px-8 py-4 flex items-center justify-between">
           <span className="text-sm font-semibold text-ink">
@@ -74,10 +75,8 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* ───────────── Hero ───────────── */}
       <section className="max-w-6xl mx-auto px-6 lg:px-8 pt-10 sm:pt-16 lg:pt-20 pb-12 sm:pb-16 lg:pb-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16">
-          {/* 좌측 — 타이포 */}
           <div className="lg:col-span-7">
             <img
               src="/bhlogo.svg"
@@ -115,63 +114,63 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* 우측 — 로그인 박스 (보더 only) */}
           <div className="lg:col-span-5 lg:pt-12">
-            <div className="border border-line p-6 sm:p-7">
-              <h2 className="text-xl font-semibold text-ink">결과 조회</h2>
-              <p className="text-sm text-muted mt-1">학부모 로그인</p>
-
-              <form onSubmit={handleLogin} className="mt-6 space-y-4">
-                <Field label="학생 이름">
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="홍길동"
-                    className="form-input"
-                  />
-                </Field>
-
-                <Field label="생년월일 8자리">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={birthDate}
-                    onChange={(e) =>
-                      setBirthDate(
-                        e.target.value.replace(/\D/g, "").slice(0, 8),
-                      )
-                    }
-                    maxLength={8}
-                    placeholder="예) 20150412"
-                    className="form-input tracking-wider"
-                  />
-                  <p className="text-xs text-muted mt-2">
-                    숫자 8자리를 비밀번호처럼 입력해 주세요.
-                  </p>
-                </Field>
-
-                {error && (
-                  <div className="text-xs text-point border border-point/40 px-3 py-2.5">
-                    {error}
-                  </div>
-                )}
-
+            <div className="border border-line">
+              {/* 탭 헤더 */}
+              <div className="flex border-b border-line">
                 <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-point hover:bg-point-dark transition text-white font-semibold py-3.5 inline-flex items-center justify-center gap-2 text-sm disabled:opacity-60"
+                  onClick={() => {
+                    setActiveTab("exam");
+                    setError("");
+                    setName("");
+                    setBirthDate("");
+                  }}
+                  className={`flex-1 px-4 py-3.5 text-sm font-semibold transition ${
+                    activeTab === "exam"
+                      ? "bg-ink text-paper"
+                      : "bg-paper text-muted hover:text-ink"
+                  }`}
                 >
-                  {loading ? "조회 중..." : "조회하기"}
-                  <ArrowRight size={16} />
+                  심사 조회
                 </button>
-              </form>
+                <button
+                  onClick={() => {
+                    setActiveTab("vehicle");
+                    setError("");
+                    setName("");
+                    setBirthDate("");
+                  }}
+                  className={`flex-1 px-4 py-3.5 text-sm font-semibold transition border-l border-line ${
+                    activeTab === "vehicle"
+                      ? "bg-ink text-paper"
+                      : "bg-paper text-muted hover:text-ink"
+                  }`}
+                >
+                  차량 등하원 시간 조회
+                </button>
+              </div>
+
+              {/* 탭 콘텐츠 */}
+              <div className="p-6 sm:p-7">
+                {activeTab === "exam" ? (
+                  <ExamSearchTab
+                    name={name}
+                    birthDate={birthDate}
+                    error={error}
+                    loading={loading}
+                    onNameChange={setName}
+                    onBirthDateChange={setBirthDate}
+                    onSubmit={handleExamLogin}
+                  />
+                ) : (
+                  <VehicleSearchTab />
+                )}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ───────────── Feature strip ───────────── */}
       <section className="border-t border-line">
         <div className="max-w-6xl mx-auto px-6 lg:px-8 py-12 sm:py-14 grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-0">
           <Feature
@@ -189,14 +188,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ───────────── Footer ───────────── */}
       <footer className="border-t border-line">
         <div className="max-w-6xl mx-auto px-6 lg:px-8 py-5 text-xs text-muted">
           © 2026 BAEKHO TAEKWONDO · KOREA NATIONAL SPORT UNIVERSITY
         </div>
       </footer>
 
-      {/* ───────────── 유급자 띠 체계 모달 ───────────── */}
       {showBeltModal && (
         <div
           className="fixed inset-0 bg-ink/40 z-50 flex items-center justify-center p-4"
@@ -219,7 +216,6 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* PC: 가로 한 줄 */}
             <div className="hidden sm:flex justify-center items-end gap-3 overflow-x-auto pb-2">
               {BELT_SYSTEM.map((belt) => (
                 <div
@@ -241,7 +237,6 @@ export default function HomePage() {
               ))}
             </div>
 
-            {/* 모바일: 3열 그리드 (컴팩트) */}
             <div className="sm:hidden grid grid-cols-3 gap-3">
               {BELT_SYSTEM.map((belt) => (
                 <div
@@ -270,7 +265,6 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* ───────────── 유품자 급수 과정 모달 ───────────── */}
       {showPoomModal && (
         <div
           className="fixed inset-0 bg-ink/40 z-50 flex items-center justify-center p-4"
@@ -332,9 +326,388 @@ export default function HomePage() {
   );
 }
 
-// ─────────────────────────────────────────────
-// 보조 컴포넌트
-// ─────────────────────────────────────────────
+// 심사 조회 탭
+function ExamSearchTab({
+  name,
+  birthDate,
+  error,
+  loading,
+  onNameChange,
+  onBirthDateChange,
+  onSubmit,
+}: {
+  name: string;
+  birthDate: string;
+  error: string;
+  loading: boolean;
+  onNameChange: (v: string) => void;
+  onBirthDateChange: (v: string) => void;
+  onSubmit: (e: React.FormEvent) => void;
+}) {
+  return (
+    <>
+      <h2 className="text-xl font-semibold text-ink">심사 결과 조회</h2>
+      <p className="text-sm text-muted mt-1">학부모 로그인</p>
+
+      <form onSubmit={onSubmit} className="mt-6 space-y-4">
+        <Field label="학생 이름">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => onNameChange(e.target.value)}
+            placeholder="홍길동"
+            className="form-input"
+          />
+        </Field>
+
+        <Field label="생년월일 8자리">
+          <input
+            type="text"
+            inputMode="numeric"
+            value={birthDate}
+            onChange={(e) =>
+              onBirthDateChange(
+                e.target.value.replace(/\D/g, "").slice(0, 8),
+              )
+            }
+            maxLength={8}
+            placeholder="예) 20150412"
+            className="form-input tracking-wider"
+            autoComplete="off"
+          />
+          <p className="text-xs text-muted mt-2">
+            숫자 8자리를 비밀번호처럼 입력해 주세요.
+          </p>
+        </Field>
+
+        {error && (
+          <div className="text-xs text-point border border-point/40 px-3 py-2.5">
+            {error}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-point hover:bg-point-dark transition text-white font-semibold py-3.5 inline-flex items-center justify-center gap-2 text-sm disabled:opacity-60"
+        >
+          {loading ? "조회 중..." : "조회하기"}
+          <ArrowRight size={16} />
+        </button>
+      </form>
+    </>
+  );
+}
+
+// 차량 조회 탭
+function VehicleSearchTab() {
+  const [name, setName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [searchResult, setSearchResult] = useState<{
+    vehicles: StudentVehicleInfo[];
+    schedules: VehicleSchedule[];
+  } | null>(null);
+
+  const handleVehicleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    setSearchResult(null);
+
+    if (!name.trim() || !birthDate) {
+      setError("이름과 생년월일을 모두 입력해 주세요.");
+      setLoading(false);
+      return;
+    }
+
+    if (!/^\d{8}$/.test(birthDate)) {
+      setError("생년월일은 20150412 형식의 8자리 숫자로 입력해 주세요.");
+      setLoading(false);
+      return;
+    }
+
+    const formatted = `${birthDate.slice(0, 4)}-${birthDate.slice(4, 6)}-${birthDate.slice(6, 8)}`;
+
+    try {
+      const vehicles = await findVehicleInfoByNameAndBirthDate(name, formatted);
+
+      if (vehicles.length === 0) {
+        setError("입력하신 정보와 일치하는 차량 운행 정보를 찾을 수 없습니다. 이름과 생년월일을 다시 확인해주세요.");
+        setLoading(false);
+        return;
+      }
+
+      // 해당 차량 정보의 게시물 조회
+      const schedules = await loadVehicleSchedules();
+      const scheduleIds = [...new Set(vehicles.map(v => v.scheduleId))];
+      const matchedSchedules = schedules
+        .filter(s => scheduleIds.includes(s.id) && s.isPublished)
+        .sort((a, b) => b.startDate.localeCompare(a.startDate)); // 최신순
+
+      setSearchResult({ vehicles, schedules: matchedSchedules });
+    } catch (err) {
+      console.error(err);
+      setError("조회 중 오류가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <>
+      {!searchResult ? (
+        <>
+          <h2 className="text-xl font-semibold text-ink">차량 등하원 시간 조회</h2>
+          <p className="text-sm text-muted mt-1">학부모 조회</p>
+
+          <form onSubmit={handleVehicleSearch} className="mt-6 space-y-4">
+            <Field label="학생 이름">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="홍길동"
+                className="form-input"
+              />
+            </Field>
+
+            <Field label="생년월일 8자리">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={birthDate}
+                onChange={(e) =>
+                  setBirthDate(
+                    e.target.value.replace(/\D/g, "").slice(0, 8),
+                  )
+                }
+                maxLength={8}
+                placeholder="예) 20150412"
+                className="form-input tracking-wider"
+                autoComplete="off"
+              />
+              <p className="text-xs text-muted mt-2">
+                숫자 8자리를 비밀번호처럼 입력해 주세요.
+              </p>
+            </Field>
+
+            {error && (
+              <div className="text-xs text-point border border-point/40 px-3 py-2.5">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-point hover:bg-point-dark transition text-white font-semibold py-3.5 inline-flex items-center justify-center gap-2 text-sm disabled:opacity-60"
+            >
+              {loading ? "조회 중..." : "조회하기"}
+              <ArrowRight size={16} />
+            </button>
+          </form>
+        </>
+      ) : (
+        <VehicleSearchResult
+          result={searchResult}
+          onBack={() => {
+            setSearchResult(null);
+            setName("");
+            setBirthDate("");
+          }}
+          onPrint={handlePrint}
+        />
+      )}
+    </>
+  );
+}
+
+// 차량 조회 결과
+function VehicleSearchResult({
+  result,
+  onBack,
+  onPrint,
+}: {
+  result: {
+    vehicles: StudentVehicleInfo[];
+    schedules: VehicleSchedule[];
+  };
+  onBack: () => void;
+  onPrint: () => void;
+}) {
+  const [expandedSchedule, setExpandedSchedule] = useState<string | null>(
+    result.schedules.find(s => getVehicleStatus(s.startDate, s.endDate) === "active")?.id ?? result.schedules[0]?.id ?? null
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between print:hidden">
+        <button
+          onClick={onBack}
+          className="text-sm text-ink-soft hover:text-ink inline-flex items-center gap-1"
+        >
+          <ArrowRight size={14} className="rotate-180" /> 다시 조회하기
+        </button>
+        <button
+          onClick={onPrint}
+          className="text-xs px-3 py-1.5 border border-line text-ink-soft hover:border-ink hover:text-ink transition"
+        >
+          인쇄하기
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        {result.schedules.map((schedule) => {
+          const vehicleInfo = result.vehicles.find(v => v.scheduleId === schedule.id);
+          if (!vehicleInfo) return null;
+
+          const status = getVehicleStatus(schedule.startDate, schedule.endDate);
+          const isExpanded = expandedSchedule === schedule.id;
+
+          return (
+            <div key={schedule.id} className="border border-line">
+              <button
+                onClick={() => setExpandedSchedule(isExpanded ? null : schedule.id)}
+                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-line-soft transition print:hidden"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-base font-semibold text-ink">
+                    {schedule.title}
+                  </span>
+                  <span
+                    className={`text-[10px] px-2 py-1 ${
+                      status === "active"
+                        ? "bg-point text-white"
+                        : status === "upcoming"
+                          ? "border border-ink text-ink"
+                          : "border border-line text-muted"
+                    }`}
+                  >
+                    {status === "active" ? "운행 중" : status === "upcoming" ? "예정" : "운행 종료"}
+                  </span>
+                </div>
+                {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              </button>
+
+              {/* 인쇄 시에는 펼쳐진 상태 */}
+              {(isExpanded || true) && (
+                <div className={`border-t border-line p-4 space-y-4 ${!isExpanded && "hidden print:block"}`}>
+                  <div className="text-sm text-muted">
+                    운행 기간: {schedule.startDate} ~ {schedule.endDate}
+                  </div>
+
+                  {vehicleInfo.pickupEnabled && (
+                    <div className="border border-line p-4">
+                      <h4 className="text-sm font-semibold text-ink mb-3">등원</h4>
+                      <div className="space-y-2 text-sm">
+                        {vehicleInfo.pickupLocation && (
+                          <div className="flex gap-2">
+                            <span className="text-muted min-w-[60px]">장소:</span>
+                            <span className="text-ink font-medium">{vehicleInfo.pickupLocation}</span>
+                          </div>
+                        )}
+                        {vehicleInfo.pickupTime && (
+                          <div className="flex gap-2">
+                            <span className="text-muted min-w-[60px]">시간:</span>
+                            <span className="text-ink font-medium">{vehicleInfo.pickupTime}</span>
+                          </div>
+                        )}
+                        {vehicleInfo.pickupVehicle && (
+                          <div className="flex gap-2">
+                            <span className="text-muted min-w-[60px]">차량:</span>
+                            <span className="text-ink">{vehicleInfo.pickupVehicle}</span>
+                          </div>
+                        )}
+                        {vehicleInfo.pickupManager && (
+                          <div className="flex gap-2">
+                            <span className="text-muted min-w-[60px]">담당자:</span>
+                            <span className="text-ink">{vehicleInfo.pickupManager}</span>
+                          </div>
+                        )}
+                        {vehicleInfo.pickupNote && (
+                          <div className="flex gap-2">
+                            <span className="text-muted min-w-[60px]">비고:</span>
+                            <span className="text-ink-soft">{vehicleInfo.pickupNote}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {!vehicleInfo.pickupEnabled && (
+                    <div className="border border-line p-4 bg-line-soft">
+                      <h4 className="text-sm font-semibold text-ink mb-1">등원</h4>
+                      <p className="text-sm text-muted">개별 등원</p>
+                    </div>
+                  )}
+
+                  {vehicleInfo.dropoffEnabled && (
+                    <div className="border border-line p-4">
+                      <h4 className="text-sm font-semibold text-ink mb-3">하원</h4>
+                      <div className="space-y-2 text-sm">
+                        {vehicleInfo.dropoffLocation && (
+                          <div className="flex gap-2">
+                            <span className="text-muted min-w-[60px]">장소:</span>
+                            <span className="text-ink font-medium">{vehicleInfo.dropoffLocation}</span>
+                          </div>
+                        )}
+                        {vehicleInfo.dropoffTime && (
+                          <div className="flex gap-2">
+                            <span className="text-muted min-w-[60px]">시간:</span>
+                            <span className="text-ink font-medium">{vehicleInfo.dropoffTime}</span>
+                          </div>
+                        )}
+                        {vehicleInfo.dropoffVehicle && (
+                          <div className="flex gap-2">
+                            <span className="text-muted min-w-[60px]">차량:</span>
+                            <span className="text-ink">{vehicleInfo.dropoffVehicle}</span>
+                          </div>
+                        )}
+                        {vehicleInfo.dropoffManager && (
+                          <div className="flex gap-2">
+                            <span className="text-muted min-w-[60px]">담당자:</span>
+                            <span className="text-ink">{vehicleInfo.dropoffManager}</span>
+                          </div>
+                        )}
+                        {vehicleInfo.dropoffNote && (
+                          <div className="flex gap-2">
+                            <span className="text-muted min-w-[60px]">비고:</span>
+                            <span className="text-ink-soft">{vehicleInfo.dropoffNote}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {!vehicleInfo.dropoffEnabled && (
+                    <div className="border border-line p-4 bg-line-soft">
+                      <h4 className="text-sm font-semibold text-ink mb-1">하원</h4>
+                      <p className="text-sm text-muted">개별 하원</p>
+                    </div>
+                  )}
+
+                  {schedule.notice && (
+                    <div className="border-t border-line pt-4 mt-4">
+                      <h4 className="text-xs font-medium text-muted mb-2">안내사항</h4>
+                      <p className="text-sm text-ink-soft whitespace-pre-line">{schedule.notice}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function Feature({ t, b }: { t: string; b: string }) {
   return (
     <div className="md:px-8 first:md:pl-0 last:md:pr-0 md:border-r md:border-line last:md:border-r-0">

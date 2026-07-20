@@ -5,6 +5,9 @@ import {
   TargetGrade,
   AttendanceStudent,
   AttendanceRecord,
+  VehicleSchedule,
+  StudentVehicleInfo,
+  VehicleStatus,
 } from "@/lib/types";
 
 // ─────────────────────────────────────────────
@@ -685,3 +688,295 @@ export async function getStudentCurrentGrade(
   // 3. 둘 다 없으면 기본 9급
   return "9급" as CurrentGrade;
 }
+
+// ─────────────────────────────────────────────
+// 차량 게시물 관리 (vehicleSchedules)
+// ─────────────────────────────────────────────
+let vehicleSchedulesCache: VehicleSchedule[] | null = null;
+let vehicleSchedulesCachedAt = 0;
+
+function invalidateVehicleSchedulesCache() {
+  vehicleSchedulesCache = null;
+  vehicleSchedulesCachedAt = 0;
+}
+
+export async function loadVehicleSchedules(
+  force = false,
+): Promise<VehicleSchedule[]> {
+  if (
+    !force &&
+    vehicleSchedulesCache !== null &&
+    Date.now() - vehicleSchedulesCachedAt < CACHE_TTL
+  ) {
+    return vehicleSchedulesCache;
+  }
+  try {
+    const res = await fetch("/api/vehicle?type=schedules", {
+      next: { revalidate: 30 },
+    });
+    if (!res.ok) return vehicleSchedulesCache ?? [];
+    const data = await res.json();
+    const list = Array.isArray(data) ? (data as VehicleSchedule[]) : [];
+    vehicleSchedulesCache = list;
+    vehicleSchedulesCachedAt = Date.now();
+    return list;
+  } catch (e) {
+    console.error("[loadVehicleSchedules]", e);
+    return vehicleSchedulesCache ?? [];
+  }
+}
+
+export async function upsertVehicleSchedule(
+  schedule: VehicleSchedule,
+): Promise<VehicleSchedule[]> {
+  const base = vehicleSchedulesCache ?? (await loadVehicleSchedules());
+  const next = [...base];
+  const idx = next.findIndex((s) => s.id === schedule.id);
+  if (idx >= 0) next[idx] = schedule;
+  else next.push(schedule);
+
+  let res: Response;
+  try {
+    res = await fetch(
+      `/api/vehicle?type=schedules&id=${encodeURIComponent(schedule.id)}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(schedule),
+      },
+    );
+  } catch (e) {
+    invalidateVehicleSchedulesCache();
+    console.error("[upsertVehicleSchedule] network error", e);
+    throw new Error("차량 게시물 저장 실패: 네트워크 오류");
+  }
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    invalidateVehicleSchedulesCache();
+    console.error("[upsertVehicleSchedule] HTTP", res.status, txt);
+    throw new Error(`차량 게시물 저장 실패 (${res.status})`);
+  }
+
+  vehicleSchedulesCache = next;
+  vehicleSchedulesCachedAt = Date.now();
+  return next;
+}
+
+export async function deleteVehicleSchedule(
+  id: string,
+): Promise<VehicleSchedule[]> {
+  const base = vehicleSchedulesCache ?? (await loadVehicleSchedules());
+  const next = base.filter((s) => s.id !== id);
+
+  let res: Response;
+  try {
+    res = await fetch(
+      `/api/vehicle?type=schedules&id=${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    );
+  } catch (e) {
+    invalidateVehicleSchedulesCache();
+    console.error("[deleteVehicleSchedule] network error", e);
+    throw new Error("차량 게시물 삭제 실패: 네트워크 오류");
+  }
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    invalidateVehicleSchedulesCache();
+    console.error("[deleteVehicleSchedule] HTTP", res.status, txt);
+    throw new Error(`차량 게시물 삭제 실패 (${res.status})`);
+  }
+
+  vehicleSchedulesCache = next;
+  vehicleSchedulesCachedAt = Date.now();
+  return next;
+}
+
+// ─────────────────────────────────────────────
+// 원생별 차량 정보 (studentVehicles)
+// ─────────────────────────────────────────────
+let studentVehiclesCache: StudentVehicleInfo[] | null = null;
+let studentVehiclesCachedAt = 0;
+
+function invalidateStudentVehiclesCache() {
+  studentVehiclesCache = null;
+  studentVehiclesCachedAt = 0;
+}
+
+export async function loadStudentVehicles(
+  force = false,
+): Promise<StudentVehicleInfo[]> {
+  if (
+    !force &&
+    studentVehiclesCache !== null &&
+    Date.now() - studentVehiclesCachedAt < CACHE_TTL
+  ) {
+    return studentVehiclesCache;
+  }
+  try {
+    const res = await fetch("/api/vehicle?type=students", {
+      next: { revalidate: 30 },
+    });
+    if (!res.ok) return studentVehiclesCache ?? [];
+    const data = await res.json();
+    const list = Array.isArray(data) ? (data as StudentVehicleInfo[]) : [];
+    studentVehiclesCache = list;
+    studentVehiclesCachedAt = Date.now();
+    return list;
+  } catch (e) {
+    console.error("[loadStudentVehicles]", e);
+    return studentVehiclesCache ?? [];
+  }
+}
+
+export async function upsertStudentVehicle(
+  vehicle: StudentVehicleInfo,
+): Promise<StudentVehicleInfo[]> {
+  const base = studentVehiclesCache ?? (await loadStudentVehicles());
+  const next = [...base];
+  const idx = next.findIndex((v) => v.id === vehicle.id);
+  if (idx >= 0) next[idx] = vehicle;
+  else next.push(vehicle);
+
+  let res: Response;
+  try {
+    res = await fetch(
+      `/api/vehicle?type=students&id=${encodeURIComponent(vehicle.id)}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(vehicle),
+      },
+    );
+  } catch (e) {
+    invalidateStudentVehiclesCache();
+    console.error("[upsertStudentVehicle] network error", e);
+    throw new Error("차량 정보 저장 실패: 네트워크 오류");
+  }
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    invalidateStudentVehiclesCache();
+    console.error("[upsertStudentVehicle] HTTP", res.status, txt);
+    throw new Error(`차량 정보 저장 실패 (${res.status})`);
+  }
+
+  studentVehiclesCache = next;
+  studentVehiclesCachedAt = Date.now();
+  return next;
+}
+
+export async function deleteStudentVehicle(
+  id: string,
+): Promise<StudentVehicleInfo[]> {
+  const base = studentVehiclesCache ?? (await loadStudentVehicles());
+  const next = base.filter((v) => v.id !== id);
+
+  let res: Response;
+  try {
+    res = await fetch(
+      `/api/vehicle?type=students&id=${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    );
+  } catch (e) {
+    invalidateStudentVehiclesCache();
+    console.error("[deleteStudentVehicle] network error", e);
+    throw new Error("차량 정보 삭제 실패: 네트워크 오류");
+  }
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    invalidateStudentVehiclesCache();
+    console.error("[deleteStudentVehicle] HTTP", res.status, txt);
+    throw new Error(`차량 정보 삭제 실패 (${res.status})`);
+  }
+
+  studentVehiclesCache = next;
+  studentVehiclesCachedAt = Date.now();
+  return next;
+}
+
+// ─────────────────────────────────────────────
+// 차량 조회 헬퍼 함수
+// ─────────────────────────────────────────────
+
+// 이름과 생년월일로 차량 정보 조회
+export async function findVehicleInfoByNameAndBirthDate(
+  name: string,
+  birthDate: string,
+): Promise<StudentVehicleInfo[]> {
+  const vehicleList = await loadStudentVehicles();
+  const target = name.trim().toLowerCase();
+
+  // 이름과 생년월일이 모두 일치하는 차량 정보 필터링
+  const matchedVehicles = vehicleList.filter(
+    (v) =>
+      v.studentName.trim().toLowerCase() === target &&
+      v.birthDate === birthDate
+  );
+
+  return matchedVehicles;
+}
+
+// 특정 게시물의 차량 정보 조회 (게시물 ID 기준)
+export async function getVehiclesByScheduleId(
+  scheduleId: string,
+): Promise<StudentVehicleInfo[]> {
+  const list = await loadStudentVehicles();
+  return list.filter((v) => v.scheduleId === scheduleId);
+}
+
+// 차량 게시물 상태 계산 (오늘 날짜 기준)
+export function getVehicleStatus(
+  startDate: string,
+  endDate: string,
+): VehicleStatus {
+  const today = new Date().toISOString().split("T")[0];
+
+  if (today < startDate) return "upcoming";
+  if (today > endDate) return "completed";
+  return "active";
+}
+
+// 차량 게시물 템플릿
+export const newVehicleScheduleTemplate = (id?: string): VehicleSchedule => ({
+  id: id || `vehicle-schedule-${Date.now()}`,
+  title: "",
+  startDate: new Date().toISOString().split("T")[0],
+  endDate: new Date().toISOString().split("T")[0],
+  notice: "",
+  isPublished: true,
+  displayOrder: 0,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+});
+
+// 원생별 차량 정보 템플릿
+export const newStudentVehicleTemplate = (
+  scheduleId: string,
+  studentId: string,
+  studentName: string,
+  birthDate: string,
+  id?: string,
+): StudentVehicleInfo => ({
+  id: id || `vehicle-student-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+  scheduleId,
+  studentId,
+  studentName,
+  birthDate,
+  pickupEnabled: true,
+  pickupLocation: "",
+  pickupTime: "",
+  pickupVehicle: "",
+  pickupManager: "",
+  pickupNote: "",
+  dropoffEnabled: true,
+  dropoffLocation: "",
+  dropoffTime: "",
+  dropoffVehicle: "",
+  dropoffManager: "",
+  dropoffNote: "",
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+});

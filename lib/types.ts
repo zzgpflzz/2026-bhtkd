@@ -184,3 +184,48 @@ export interface AttendanceRecord {
   reason?: string; // 결석 사유 (결석일 때만)
   recordedAt: string; // ISO 8601
 }
+
+// ─────────────────────────────────────────────
+// 차량 등하원 시스템 타입 정의
+// ─────────────────────────────────────────────
+
+export type VehicleStatus = "upcoming" | "active" | "completed";
+
+export interface VehicleSchedule {
+  id: string;
+  title: string; // 게시물 제목 (예: "2026년 여름방학 차량")
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  notice?: string; // 안내사항
+  isPublished: boolean; // 공개 여부
+  displayOrder?: number; // 노출 순서 (낮을수록 우선)
+  createdAt: string; // ISO 8601
+  updatedAt: string; // ISO 8601
+}
+
+export interface StudentVehicleInfo {
+  id: string;
+  scheduleId: string; // 차량 게시물 ID
+  studentId: string; // 학생 ID
+  studentName: string; // 학생 이름 (중복 저장)
+  birthDate: string; // 생년월일 (중복 저장, 조회용)
+
+  // 등원 정보
+  pickupEnabled: boolean; // 등원 차량 이용 여부
+  pickupLocation?: string; // 등원 장소
+  pickupTime?: string; // 등원 시간
+  pickupVehicle?: string; // 등원 차량명
+  pickupManager?: string; // 등원 담당자
+  pickupNote?: string; // 등원 비고
+
+  // 하원 정보
+  dropoffEnabled: boolean; // 하원 차량 이용 여부
+  dropoffLocation?: string; // 하원 장소
+  dropoffTime?: string; // 하원 시간
+  dropoffVehicle?: string; // 하원 차량명
+  dropoffManager?: string; // 하원 담당자
+  dropoffNote?: string; // 하원 비고
+
+  createdAt: string; // ISO 8601
+  updatedAt: string; // ISO 8601
+}
