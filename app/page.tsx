@@ -602,67 +602,65 @@ function VehicleSearchResult({
                     운행 기간: {schedule.startDate} ~ {schedule.endDate}
                   </div>
 
-                  <div className="border border-line p-5">
-                    {/* 등원 */}
-                    <div className="mb-5">
-                      <div className="flex items-center gap-2 mb-4">
-                        <span className="inline-block px-3 py-1 text-sm font-semibold rounded" style={{ backgroundColor: '#00BC7D1A', color: '#00BC7D' }}>
-                          등원
-                        </span>
-                      </div>
-                      {vehicleInfo.pickupEnabled ? (
-                        <div className="space-y-3">
-                          {vehicleInfo.pickupLocation && (
-                            <div>
-                              <div className="text-xs text-muted font-medium mb-1">장소</div>
-                              <div className="text-base text-ink font-semibold">{vehicleInfo.pickupLocation}</div>
-                            </div>
-                          )}
-                          {vehicleInfo.pickupTime && (
-                            <div>
-                              <div className="text-xs text-muted font-medium mb-1">시간</div>
-                              <div className="text-lg text-ink font-bold">{vehicleInfo.pickupTime}</div>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted">개별 등원</p>
-                      )}
+                  {/* 등원 */}
+                  <div className="mb-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="inline-block px-3 py-1 text-sm font-semibold rounded" style={{ backgroundColor: '#00BC7D1A', color: '#00BC7D' }}>
+                        등원
+                      </span>
                     </div>
-
-                    {/* 구분선 */}
-                    <div className="border-t my-5" style={{ borderColor: '#ebedee' }}></div>
-
-                    {/* 하원 */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-4">
-                        <span className="inline-block px-3 py-1 text-sm font-semibold rounded" style={{ backgroundColor: '#FF9D001A', color: '#FF9D00' }}>
-                          하원
-                        </span>
+                    {vehicleInfo.pickupEnabled ? (
+                      <div className="space-y-3">
+                        {vehicleInfo.pickupLocation && (
+                          <div>
+                            <div className="text-xs text-muted font-medium mb-1">장소</div>
+                            <div className="text-base text-ink font-semibold">{vehicleInfo.pickupLocation}</div>
+                          </div>
+                        )}
+                        {vehicleInfo.pickupTime && (
+                          <div>
+                            <div className="text-xs text-muted font-medium mb-1">시간</div>
+                            <div className="text-lg text-ink font-bold">{vehicleInfo.pickupTime}</div>
+                          </div>
+                        )}
                       </div>
-                      {vehicleInfo.dropoffEnabled ? (
-                        <div className="space-y-3">
-                          {vehicleInfo.dropoffLocation && (
-                            <div>
-                              <div className="text-xs text-muted font-medium mb-1">장소</div>
-                              <div className="text-base text-ink font-semibold">{vehicleInfo.dropoffLocation}</div>
-                            </div>
-                          )}
-                          {vehicleInfo.dropoffTime && (
-                            <div>
-                              <div className="text-xs text-muted font-medium mb-1">시간</div>
-                              <div className="text-lg text-ink font-bold">{vehicleInfo.dropoffTime}</div>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted">개별 하원</p>
-                      )}
+                    ) : (
+                      <p className="text-sm text-muted">개별 등원</p>
+                    )}
+                  </div>
+
+                  {/* 구분선 */}
+                  <div className="border-t my-5" style={{ borderColor: '#ebedee' }}></div>
+
+                  {/* 하원 */}
+                  <div className="mb-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="inline-block px-3 py-1 text-sm font-semibold rounded" style={{ backgroundColor: '#FF9D001A', color: '#FF9D00' }}>
+                        하원
+                      </span>
                     </div>
+                    {vehicleInfo.dropoffEnabled ? (
+                      <div className="space-y-3">
+                        {vehicleInfo.dropoffLocation && (
+                          <div>
+                            <div className="text-xs text-muted font-medium mb-1">장소</div>
+                            <div className="text-base text-ink font-semibold">{vehicleInfo.dropoffLocation}</div>
+                          </div>
+                        )}
+                        {vehicleInfo.dropoffTime && (
+                          <div>
+                            <div className="text-xs text-muted font-medium mb-1">시간</div>
+                            <div className="text-lg text-ink font-bold">{vehicleInfo.dropoffTime}</div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted">개별 하원</p>
+                    )}
                   </div>
 
                   {schedule.notice && (
-                    <div className="border-t border-line pt-5 mt-5">
+                    <div className="border-t pt-5" style={{ borderColor: '#ebedee' }}>
                       <h4 className="text-xs font-medium text-muted mb-2">안내사항</h4>
                       <p className="text-sm text-ink-soft whitespace-pre-line leading-relaxed">{schedule.notice}</p>
                     </div>
