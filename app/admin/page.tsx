@@ -1057,13 +1057,55 @@ function ExamEditModal({
   onDelete: () => Promise<void>;
 }) {
   const [form, setForm] = useState<Exam>(exam);
+  const [hasDraft, setHasDraft] = useState(false);
+
+  const draftKey = `exam-draft-${exam.id}`;
+
+  // 컴포넌트 마운트 시 임시저장 데이터 확인
+  useEffect(() => {
+    const draft = localStorage.getItem(draftKey);
+    if (draft) {
+      setHasDraft(true);
+    }
+  }, [draftKey]);
+
+  // 폼 변경 시 자동 임시저장 (3초 디바운스)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      localStorage.setItem(draftKey, JSON.stringify(form));
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [form, draftKey]);
 
   const update = <K extends keyof Exam>(key: K, value: Exam[K]) =>
     setForm((p) => ({ ...p, [key]: value }));
 
+  // 임시저장 불러오기
+  const loadDraft = () => {
+    const draft = localStorage.getItem(draftKey);
+    if (draft) {
+      const parsed = JSON.parse(draft) as Exam;
+      setForm(parsed);
+      setHasDraft(false);
+      alert("임시저장된 내용을 불러왔습니다.");
+    }
+  };
+
+  // 임시저장 삭제
+  const clearDraft = () => {
+    localStorage.removeItem(draftKey);
+    setHasDraft(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onSave(form);
+    clearDraft(); // 저장 성공 시 임시저장 삭제
+  };
+
+  const handleClose = () => {
+    // 닫을 때 임시저장 유지
+    onClose();
   };
 
   return (
@@ -1073,15 +1115,30 @@ function ExamEditModal({
         className="bg-paper border border-line max-w-4xl w-full p-6 sm:p-8 my-8"
       >
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-ink">심사 정보 입력</h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-lg font-semibold text-ink">심사 정보 입력</h3>
+            {hasDraft && (
+              <button
+                type="button"
+                onClick={loadDraft}
+                className="text-xs px-3 py-1.5 bg-point/10 text-point border border-point/30 hover:bg-point/20 transition rounded"
+              >
+                임시저장 불러오기
+              </button>
+            )}
+          </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="p-1.5 hover:bg-line-soft"
             aria-label="닫기"
           >
             <X size={18} />
           </button>
+        </div>
+
+        <div className="mb-4 text-xs text-muted bg-line-soft px-3 py-2 rounded">
+          💾 입력 중인 내용은 3초마다 자동으로 임시저장됩니다.
         </div>
 
         <Section title="기본 정보">
@@ -1243,7 +1300,7 @@ function ExamEditModal({
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="px-4 py-2.5 border border-line text-ink-soft hover:border-ink hover:text-ink"
             >
               취소
