@@ -432,12 +432,12 @@ function ScheduleDetail({
                     </div>
                     <div className="flex gap-2 mt-2">
                       {v.pickupEnabled && (
-                        <span className="text-[10px] px-2 py-0.5 border border-line text-ink-soft">
+                        <span className="text-[10px] px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-700">
                           등원: {v.pickupLocation} {v.pickupTime}
                         </span>
                       )}
                       {v.dropoffEnabled && (
-                        <span className="text-[10px] px-2 py-0.5 border border-line text-ink-soft">
+                        <span className="text-[10px] px-2 py-0.5 bg-orange-50 border border-orange-200 text-orange-700">
                           하원: {v.dropoffLocation} {v.dropoffTime}
                         </span>
                       )}
@@ -648,34 +648,11 @@ function VehicleEditModal({
                 </Field>
                 <Field label="등원 시간">
                   <input
-                    type="time"
+                    type="text"
                     value={form.pickupTime || ""}
                     onChange={(e) => update("pickupTime", e.target.value)}
                     className="form-input"
-                  />
-                </Field>
-                <Field label="차량명">
-                  <input
-                    value={form.pickupVehicle || ""}
-                    onChange={(e) => update("pickupVehicle", e.target.value)}
-                    className="form-input"
-                    placeholder="예) 1호차"
-                  />
-                </Field>
-                <Field label="담당자">
-                  <input
-                    value={form.pickupManager || ""}
-                    onChange={(e) => update("pickupManager", e.target.value)}
-                    className="form-input"
-                    placeholder="예) 김OO 선생님"
-                  />
-                </Field>
-                <Field label="비고 (선택)" className="sm:col-span-2">
-                  <input
-                    value={form.pickupNote || ""}
-                    onChange={(e) => update("pickupNote", e.target.value)}
-                    className="form-input"
-                    placeholder="예) 차량 도착 5분 전까지 대기"
+                    placeholder="예) 오전 9시 10분"
                   />
                 </Field>
               </div>
@@ -704,34 +681,11 @@ function VehicleEditModal({
                 </Field>
                 <Field label="하원 시간">
                   <input
-                    type="time"
+                    type="text"
                     value={form.dropoffTime || ""}
                     onChange={(e) => update("dropoffTime", e.target.value)}
                     className="form-input"
-                  />
-                </Field>
-                <Field label="차량명">
-                  <input
-                    value={form.dropoffVehicle || ""}
-                    onChange={(e) => update("dropoffVehicle", e.target.value)}
-                    className="form-input"
-                    placeholder="예) 1호차"
-                  />
-                </Field>
-                <Field label="담당자">
-                  <input
-                    value={form.dropoffManager || ""}
-                    onChange={(e) => update("dropoffManager", e.target.value)}
-                    className="form-input"
-                    placeholder="예) 김OO 선생님"
-                  />
-                </Field>
-                <Field label="비고 (선택)" className="sm:col-span-2">
-                  <input
-                    value={form.dropoffNote || ""}
-                    onChange={(e) => update("dropoffNote", e.target.value)}
-                    className="form-input"
-                    placeholder="예) 차량 도착 5분 전까지 대기"
+                    placeholder="예) 오후 2시 30분"
                   />
                 </Field>
               </div>

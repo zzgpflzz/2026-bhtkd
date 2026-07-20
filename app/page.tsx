@@ -597,105 +597,83 @@ function VehicleSearchResult({
 
               {/* 인쇄 시에는 펼쳐진 상태 */}
               {(isExpanded || true) && (
-                <div className={`border-t border-line p-4 space-y-4 ${!isExpanded && "hidden print:block"}`}>
-                  <div className="text-sm text-muted">
+                <div className={`border-t border-line p-5 sm:p-6 ${!isExpanded && "hidden print:block"}`}>
+                  <div className="text-sm text-muted mb-5">
                     운행 기간: {schedule.startDate} ~ {schedule.endDate}
                   </div>
 
-                  {vehicleInfo.pickupEnabled && (
-                    <div className="border border-line p-4">
-                      <h4 className="text-sm font-semibold text-ink mb-3">등원</h4>
-                      <div className="space-y-2 text-sm">
-                        {vehicleInfo.pickupLocation && (
-                          <div className="flex gap-2">
-                            <span className="text-muted min-w-[60px]">장소:</span>
-                            <span className="text-ink font-medium">{vehicleInfo.pickupLocation}</span>
-                          </div>
-                        )}
-                        {vehicleInfo.pickupTime && (
-                          <div className="flex gap-2">
-                            <span className="text-muted min-w-[60px]">시간:</span>
-                            <span className="text-ink font-medium">{vehicleInfo.pickupTime}</span>
-                          </div>
-                        )}
-                        {vehicleInfo.pickupVehicle && (
-                          <div className="flex gap-2">
-                            <span className="text-muted min-w-[60px]">차량:</span>
-                            <span className="text-ink">{vehicleInfo.pickupVehicle}</span>
-                          </div>
-                        )}
-                        {vehicleInfo.pickupManager && (
-                          <div className="flex gap-2">
-                            <span className="text-muted min-w-[60px]">담당자:</span>
-                            <span className="text-ink">{vehicleInfo.pickupManager}</span>
-                          </div>
-                        )}
-                        {vehicleInfo.pickupNote && (
-                          <div className="flex gap-2">
-                            <span className="text-muted min-w-[60px]">비고:</span>
-                            <span className="text-ink-soft">{vehicleInfo.pickupNote}</span>
-                          </div>
-                        )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {vehicleInfo.pickupEnabled ? (
+                      <div className="border-2 border-blue-200 bg-blue-50 p-5 rounded-lg">
+                        <div className="flex items-center gap-2 mb-4">
+                          <span className="inline-block px-3 py-1 bg-blue-500 text-white text-sm font-semibold rounded">
+                            등원
+                          </span>
+                        </div>
+                        <div className="space-y-3">
+                          {vehicleInfo.pickupLocation && (
+                            <div>
+                              <div className="text-xs text-blue-700 font-medium mb-1">장소</div>
+                              <div className="text-base text-ink font-semibold">{vehicleInfo.pickupLocation}</div>
+                            </div>
+                          )}
+                          {vehicleInfo.pickupTime && (
+                            <div>
+                              <div className="text-xs text-blue-700 font-medium mb-1">시간</div>
+                              <div className="text-lg text-ink font-bold">{vehicleInfo.pickupTime}</div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
-
-                  {!vehicleInfo.pickupEnabled && (
-                    <div className="border border-line p-4 bg-line-soft">
-                      <h4 className="text-sm font-semibold text-ink mb-1">등원</h4>
-                      <p className="text-sm text-muted">개별 등원</p>
-                    </div>
-                  )}
-
-                  {vehicleInfo.dropoffEnabled && (
-                    <div className="border border-line p-4">
-                      <h4 className="text-sm font-semibold text-ink mb-3">하원</h4>
-                      <div className="space-y-2 text-sm">
-                        {vehicleInfo.dropoffLocation && (
-                          <div className="flex gap-2">
-                            <span className="text-muted min-w-[60px]">장소:</span>
-                            <span className="text-ink font-medium">{vehicleInfo.dropoffLocation}</span>
-                          </div>
-                        )}
-                        {vehicleInfo.dropoffTime && (
-                          <div className="flex gap-2">
-                            <span className="text-muted min-w-[60px]">시간:</span>
-                            <span className="text-ink font-medium">{vehicleInfo.dropoffTime}</span>
-                          </div>
-                        )}
-                        {vehicleInfo.dropoffVehicle && (
-                          <div className="flex gap-2">
-                            <span className="text-muted min-w-[60px]">차량:</span>
-                            <span className="text-ink">{vehicleInfo.dropoffVehicle}</span>
-                          </div>
-                        )}
-                        {vehicleInfo.dropoffManager && (
-                          <div className="flex gap-2">
-                            <span className="text-muted min-w-[60px]">담당자:</span>
-                            <span className="text-ink">{vehicleInfo.dropoffManager}</span>
-                          </div>
-                        )}
-                        {vehicleInfo.dropoffNote && (
-                          <div className="flex gap-2">
-                            <span className="text-muted min-w-[60px]">비고:</span>
-                            <span className="text-ink-soft">{vehicleInfo.dropoffNote}</span>
-                          </div>
-                        )}
+                    ) : (
+                      <div className="border border-line bg-line-soft p-5 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="inline-block px-3 py-1 bg-muted text-white text-sm font-semibold rounded">
+                            등원
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted">개별 등원</p>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {!vehicleInfo.dropoffEnabled && (
-                    <div className="border border-line p-4 bg-line-soft">
-                      <h4 className="text-sm font-semibold text-ink mb-1">하원</h4>
-                      <p className="text-sm text-muted">개별 하원</p>
-                    </div>
-                  )}
+                    {vehicleInfo.dropoffEnabled ? (
+                      <div className="border-2 border-orange-200 bg-orange-50 p-5 rounded-lg">
+                        <div className="flex items-center gap-2 mb-4">
+                          <span className="inline-block px-3 py-1 bg-orange-500 text-white text-sm font-semibold rounded">
+                            하원
+                          </span>
+                        </div>
+                        <div className="space-y-3">
+                          {vehicleInfo.dropoffLocation && (
+                            <div>
+                              <div className="text-xs text-orange-700 font-medium mb-1">장소</div>
+                              <div className="text-base text-ink font-semibold">{vehicleInfo.dropoffLocation}</div>
+                            </div>
+                          )}
+                          {vehicleInfo.dropoffTime && (
+                            <div>
+                              <div className="text-xs text-orange-700 font-medium mb-1">시간</div>
+                              <div className="text-lg text-ink font-bold">{vehicleInfo.dropoffTime}</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="border border-line bg-line-soft p-5 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="inline-block px-3 py-1 bg-muted text-white text-sm font-semibold rounded">
+                            하원
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted">개별 하원</p>
+                      </div>
+                    )}
+                  </div>
 
                   {schedule.notice && (
-                    <div className="border-t border-line pt-4 mt-4">
+                    <div className="border-t border-line pt-5 mt-5">
                       <h4 className="text-xs font-medium text-muted mb-2">안내사항</h4>
-                      <p className="text-sm text-ink-soft whitespace-pre-line">{schedule.notice}</p>
+                      <p className="text-sm text-ink-soft whitespace-pre-line leading-relaxed">{schedule.notice}</p>
                     </div>
                   )}
                 </div>
