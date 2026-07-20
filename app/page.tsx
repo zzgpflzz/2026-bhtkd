@@ -547,20 +547,6 @@ function VehicleSearchResult({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between print:hidden">
-        <button
-          onClick={onBack}
-          className="text-sm text-ink-soft hover:text-ink inline-flex items-center gap-1"
-        >
-          <ArrowRight size={14} className="rotate-180" /> 다시 조회하기
-        </button>
-        <button
-          onClick={onPrint}
-          className="text-xs px-3 py-1.5 border border-line text-ink-soft hover:border-ink hover:text-ink transition"
-        >
-          인쇄하기
-        </button>
-      </div>
 
       <div className="space-y-2">
         {result.schedules.map((schedule) => {
@@ -620,7 +606,7 @@ function VehicleSearchResult({
                         {vehicleInfo.pickupTime && (
                           <div>
                             <div className="text-xs text-muted font-medium mb-1">시간</div>
-                            <div className="text-lg text-ink font-bold">{vehicleInfo.pickupTime}</div>
+                            <div className="text-base text-ink font-semibold">{vehicleInfo.pickupTime}</div>
                           </div>
                         )}
                       </div>
@@ -650,7 +636,7 @@ function VehicleSearchResult({
                         {vehicleInfo.dropoffTime && (
                           <div>
                             <div className="text-xs text-muted font-medium mb-1">시간</div>
-                            <div className="text-lg text-ink font-bold">{vehicleInfo.dropoffTime}</div>
+                            <div className="text-base text-ink font-semibold">{vehicleInfo.dropoffTime}</div>
                           </div>
                         )}
                       </div>
