@@ -602,14 +602,15 @@ function VehicleSearchResult({
                     운행 기간: {schedule.startDate} ~ {schedule.endDate}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {vehicleInfo.pickupEnabled ? (
-                      <div className="border border-line p-5">
-                        <div className="flex items-center gap-2 mb-4">
-                          <span className="inline-block px-3 py-1 text-sm font-semibold rounded" style={{ backgroundColor: '#00BC7D1A', color: '#00BC7D' }}>
-                            등원
-                          </span>
-                        </div>
+                  <div className="border border-line p-5">
+                    {/* 등원 */}
+                    <div className="mb-5">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="inline-block px-3 py-1 text-sm font-semibold rounded" style={{ backgroundColor: '#00BC7D1A', color: '#00BC7D' }}>
+                          등원
+                        </span>
+                      </div>
+                      {vehicleInfo.pickupEnabled ? (
                         <div className="space-y-3">
                           {vehicleInfo.pickupLocation && (
                             <div>
@@ -624,25 +625,22 @@ function VehicleSearchResult({
                             </div>
                           )}
                         </div>
-                      </div>
-                    ) : (
-                      <div className="border border-line p-5">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="inline-block px-3 py-1 bg-line text-muted text-sm font-semibold rounded">
-                            등원
-                          </span>
-                        </div>
+                      ) : (
                         <p className="text-sm text-muted">개별 등원</p>
-                      </div>
-                    )}
+                      )}
+                    </div>
 
-                    {vehicleInfo.dropoffEnabled ? (
-                      <div className="border border-line p-5">
-                        <div className="flex items-center gap-2 mb-4">
-                          <span className="inline-block px-3 py-1 text-sm font-semibold rounded" style={{ backgroundColor: '#FF9D001A', color: '#FF9D00' }}>
-                            하원
-                          </span>
-                        </div>
+                    {/* 구분선 */}
+                    <div className="border-t my-5" style={{ borderColor: '#ebedee' }}></div>
+
+                    {/* 하원 */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="inline-block px-3 py-1 text-sm font-semibold rounded" style={{ backgroundColor: '#FF9D001A', color: '#FF9D00' }}>
+                          하원
+                        </span>
+                      </div>
+                      {vehicleInfo.dropoffEnabled ? (
                         <div className="space-y-3">
                           {vehicleInfo.dropoffLocation && (
                             <div>
@@ -657,17 +655,10 @@ function VehicleSearchResult({
                             </div>
                           )}
                         </div>
-                      </div>
-                    ) : (
-                      <div className="border border-line p-5">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="inline-block px-3 py-1 bg-line text-muted text-sm font-semibold rounded">
-                            하원
-                          </span>
-                        </div>
+                      ) : (
                         <p className="text-sm text-muted">개별 하원</p>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
 
                   {schedule.notice && (
