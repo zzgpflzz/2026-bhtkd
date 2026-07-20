@@ -591,7 +591,7 @@ function VehicleSearchResult({
                   {/* 등원 */}
                   <div className="mb-5">
                     <div className="flex items-center gap-2 mb-4">
-                      <span className="inline-block px-3 py-1 text-sm font-semibold rounded" style={{ backgroundColor: '#00BC7D1A', color: '#00BC7D' }}>
+                      <span className="inline-block px-2 py-0.5 text-xs font-semibold rounded" style={{ backgroundColor: '#00BC7D1A', color: '#00BC7D' }}>
                         등원
                       </span>
                     </div>
@@ -621,7 +621,7 @@ function VehicleSearchResult({
                   {/* 하원 */}
                   <div className="mb-5">
                     <div className="flex items-center gap-2 mb-4">
-                      <span className="inline-block px-3 py-1 text-sm font-semibold rounded" style={{ backgroundColor: '#FF9D001A', color: '#FF9D00' }}>
+                      <span className="inline-block px-2 py-0.5 text-xs font-semibold rounded" style={{ backgroundColor: '#FF9D001A', color: '#FF9D00' }}>
                         하원
                       </span>
                     </div>

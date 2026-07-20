@@ -430,16 +430,26 @@ function ScheduleDetail({
                     <div className="text-xs text-muted mt-1">
                       {v.birthDate}
                     </div>
-                    <div className="flex gap-2 mt-2">
+                    <div className="flex flex-col gap-1.5 mt-2">
                       {v.pickupEnabled && (
-                        <span className="text-[10px] px-2 py-0.5 rounded" style={{ backgroundColor: '#00BC7D1A', color: '#00BC7D' }}>
-                          등원: {v.pickupLocation} {v.pickupTime}
-                        </span>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="inline-block px-2 py-0.5 rounded font-semibold" style={{ backgroundColor: '#00BC7D1A', color: '#00BC7D' }}>
+                            등원
+                          </span>
+                          <span className="text-ink-soft">
+                            {v.pickupLocation} {v.pickupTime}
+                          </span>
+                        </div>
                       )}
                       {v.dropoffEnabled && (
-                        <span className="text-[10px] px-2 py-0.5 rounded" style={{ backgroundColor: '#FF9D001A', color: '#FF9D00' }}>
-                          하원: {v.dropoffLocation} {v.dropoffTime}
-                        </span>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="inline-block px-2 py-0.5 rounded font-semibold" style={{ backgroundColor: '#FF9D001A', color: '#FF9D00' }}>
+                            하원
+                          </span>
+                          <span className="text-ink-soft">
+                            {v.dropoffLocation} {v.dropoffTime}
+                          </span>
+                        </div>
                       )}
                     </div>
                   </div>
