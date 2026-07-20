@@ -604,31 +604,31 @@ function VehicleSearchResult({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {vehicleInfo.pickupEnabled ? (
-                      <div className="border-2 border-blue-200 bg-blue-50 p-5 rounded-lg">
+                      <div className="border border-line p-5">
                         <div className="flex items-center gap-2 mb-4">
-                          <span className="inline-block px-3 py-1 bg-blue-500 text-white text-sm font-semibold rounded">
+                          <span className="inline-block px-3 py-1 text-sm font-semibold rounded" style={{ backgroundColor: '#00BC7D1A', color: '#00BC7D' }}>
                             등원
                           </span>
                         </div>
                         <div className="space-y-3">
                           {vehicleInfo.pickupLocation && (
                             <div>
-                              <div className="text-xs text-blue-700 font-medium mb-1">장소</div>
+                              <div className="text-xs text-muted font-medium mb-1">장소</div>
                               <div className="text-base text-ink font-semibold">{vehicleInfo.pickupLocation}</div>
                             </div>
                           )}
                           {vehicleInfo.pickupTime && (
                             <div>
-                              <div className="text-xs text-blue-700 font-medium mb-1">시간</div>
+                              <div className="text-xs text-muted font-medium mb-1">시간</div>
                               <div className="text-lg text-ink font-bold">{vehicleInfo.pickupTime}</div>
                             </div>
                           )}
                         </div>
                       </div>
                     ) : (
-                      <div className="border border-line bg-line-soft p-5 rounded-lg">
+                      <div className="border border-line p-5">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="inline-block px-3 py-1 bg-muted text-white text-sm font-semibold rounded">
+                          <span className="inline-block px-3 py-1 bg-line text-muted text-sm font-semibold rounded">
                             등원
                           </span>
                         </div>
@@ -637,31 +637,31 @@ function VehicleSearchResult({
                     )}
 
                     {vehicleInfo.dropoffEnabled ? (
-                      <div className="border-2 border-orange-200 bg-orange-50 p-5 rounded-lg">
+                      <div className="border border-line p-5">
                         <div className="flex items-center gap-2 mb-4">
-                          <span className="inline-block px-3 py-1 bg-orange-500 text-white text-sm font-semibold rounded">
+                          <span className="inline-block px-3 py-1 text-sm font-semibold rounded" style={{ backgroundColor: '#FF9D001A', color: '#FF9D00' }}>
                             하원
                           </span>
                         </div>
                         <div className="space-y-3">
                           {vehicleInfo.dropoffLocation && (
                             <div>
-                              <div className="text-xs text-orange-700 font-medium mb-1">장소</div>
+                              <div className="text-xs text-muted font-medium mb-1">장소</div>
                               <div className="text-base text-ink font-semibold">{vehicleInfo.dropoffLocation}</div>
                             </div>
                           )}
                           {vehicleInfo.dropoffTime && (
                             <div>
-                              <div className="text-xs text-orange-700 font-medium mb-1">시간</div>
+                              <div className="text-xs text-muted font-medium mb-1">시간</div>
                               <div className="text-lg text-ink font-bold">{vehicleInfo.dropoffTime}</div>
                             </div>
                           )}
                         </div>
                       </div>
                     ) : (
-                      <div className="border border-line bg-line-soft p-5 rounded-lg">
+                      <div className="border border-line p-5">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="inline-block px-3 py-1 bg-muted text-white text-sm font-semibold rounded">
+                          <span className="inline-block px-3 py-1 bg-line text-muted text-sm font-semibold rounded">
                             하원
                           </span>
                         </div>
