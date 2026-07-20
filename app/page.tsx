@@ -584,10 +584,6 @@ function VehicleSearchResult({
               {/* 인쇄 시에는 펼쳐진 상태 */}
               {(isExpanded || true) && (
                 <div className={`border-t border-line p-5 sm:p-6 ${!isExpanded && "hidden print:block"}`}>
-                  <div className="text-sm text-muted mb-5">
-                    운행 기간: {schedule.startDate} ~ {schedule.endDate}
-                  </div>
-
                   {/* 등원 */}
                   <div className="mb-5">
                     <div className="flex items-center gap-2 mb-4">

@@ -1056,18 +1056,24 @@ function ExamEditModal({
   onSave: (e: Exam) => Promise<void>;
   onDelete: () => Promise<void>;
 }) {
-  const [form, setForm] = useState<Exam>(exam);
-  const [hasDraft, setHasDraft] = useState(false);
-
   const draftKey = `exam-draft-${exam.id}`;
 
-  // 컴포넌트 마운트 시 임시저장 데이터 확인
-  useEffect(() => {
+  // 컴포넌트 마운트 시 임시저장 데이터 확인 및 자동 로드
+  const [form, setForm] = useState<Exam>(() => {
     const draft = localStorage.getItem(draftKey);
     if (draft) {
-      setHasDraft(true);
+      try {
+        return JSON.parse(draft) as Exam;
+      } catch {
+        return exam;
+      }
     }
-  }, [draftKey]);
+    return exam;
+  });
+
+  const [hasDraft, setHasDraft] = useState(() => {
+    return !!localStorage.getItem(draftKey);
+  });
 
   const update = <K extends keyof Exam>(key: K, value: Exam[K]) =>
     setForm((p) => ({ ...p, [key]: value }));
