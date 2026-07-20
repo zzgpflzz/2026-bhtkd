@@ -1069,16 +1069,15 @@ function ExamEditModal({
     }
   }, [draftKey]);
 
-  // 폼 변경 시 자동 임시저장 (3초 디바운스)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      localStorage.setItem(draftKey, JSON.stringify(form));
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [form, draftKey]);
-
   const update = <K extends keyof Exam>(key: K, value: Exam[K]) =>
     setForm((p) => ({ ...p, [key]: value }));
+
+  // 임시저장하기
+  const saveDraft = () => {
+    localStorage.setItem(draftKey, JSON.stringify(form));
+    alert("임시저장되었습니다.");
+    setHasDraft(true);
+  };
 
   // 임시저장 불러오기
   const loadDraft = () => {
@@ -1086,7 +1085,6 @@ function ExamEditModal({
     if (draft) {
       const parsed = JSON.parse(draft) as Exam;
       setForm(parsed);
-      setHasDraft(false);
       alert("임시저장된 내용을 불러왔습니다.");
     }
   };
@@ -1104,7 +1102,6 @@ function ExamEditModal({
   };
 
   const handleClose = () => {
-    // 닫을 때 임시저장 유지
     onClose();
   };
 
@@ -1115,30 +1112,28 @@ function ExamEditModal({
         className="bg-paper border border-line max-w-4xl w-full p-6 sm:p-8 my-8"
       >
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <h3 className="text-lg font-semibold text-ink">심사 정보 입력</h3>
+          </div>
+          <div className="flex items-center gap-2">
             {hasDraft && (
               <button
                 type="button"
                 onClick={loadDraft}
-                className="text-xs px-3 py-1.5 bg-point/10 text-point border border-point/30 hover:bg-point/20 transition rounded"
+                className="text-xs px-3 py-1.5 bg-point/10 text-point border border-point/30 hover:bg-point/20 transition"
               >
                 임시저장 불러오기
               </button>
             )}
+            <button
+              type="button"
+              onClick={handleClose}
+              className="p-1.5 hover:bg-line-soft"
+              aria-label="닫기"
+            >
+              <X size={18} />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="p-1.5 hover:bg-line-soft"
-            aria-label="닫기"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="mb-4 text-xs text-muted bg-line-soft px-3 py-2 rounded">
-          💾 입력 중인 내용은 3초마다 자동으로 임시저장됩니다.
         </div>
 
         <Section title="기본 정보">
@@ -1298,6 +1293,13 @@ function ExamEditModal({
             심사 기록 삭제
           </button>
           <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={saveDraft}
+              className="px-4 py-2.5 border border-line text-ink-soft hover:border-ink hover:text-ink inline-flex items-center justify-center gap-2"
+            >
+              <Save size={16} /> 임시저장
+            </button>
             <button
               type="button"
               onClick={handleClose}
