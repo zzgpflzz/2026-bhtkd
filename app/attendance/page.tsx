@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, XCircle, Users } from "lucide-react";
+import { CheckCircle2, XCircle, Users, Calendar } from "lucide-react";
 import {
   loadAttendanceStudents,
   loadAttendanceRecords,
@@ -21,10 +21,13 @@ export default function AttendancePage() {
   const [absentStudents, setAbsentStudents] = useState<Set<string>>(new Set());
   const [absentReasons, setAbsentReasons] = useState<Record<string, string>>({});
   const [gradeFilter, setGradeFilter] = useState<string>("전체");
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  );
 
-  const today = new Date().toISOString().split("T")[0];
-  const todayDayOfWeek = (() => {
-    const day = new Date().getDay();
+  const getDayOfWeek = (dateStr: string): DayOfWeek | null => {
+    const date = new Date(dateStr + "T00:00:00");
+    const day = date.getDay();
     const map: Record<number, DayOfWeek> = {
       1: "월",
       2: "화",
@@ -33,12 +36,14 @@ export default function AttendancePage() {
       5: "금",
       6: "토",
     };
-    return map[day];
-  })();
+    return map[day] || null;
+  };
+
+  const selectedDayOfWeek = getDayOfWeek(selectedDate);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [selectedDate]);
 
   async function loadData() {
     setLoading(true);
@@ -48,24 +53,24 @@ export default function AttendancePage() {
         loadAttendanceRecords(true),
       ]);
 
-      // 오늘 등원 예정인 원생만 필터링
-      const todayStudents = allStudents.filter((s) =>
-        todayDayOfWeek ? s.attendanceDays.includes(todayDayOfWeek) : false,
+      // 선택된 날짜의 요일에 등원 예정인 원생만 필터링
+      const dayStudents = allStudents.filter((s) =>
+        selectedDayOfWeek ? s.attendanceDays.includes(selectedDayOfWeek) : false,
       );
-      setStudents(todayStudents);
+      setStudents(dayStudents);
 
-      // 오늘 출석 기록
-      const todayRecs = allRecords.filter((r) => r.date === today);
-      setTodayRecords(todayRecs);
+      // 선택된 날짜의 출석 기록
+      const dateRecords = allRecords.filter((r) => r.date === selectedDate);
+      setTodayRecords(dateRecords);
 
       // 이미 결석 처리된 원생 표시
       const absent = new Set(
-        todayRecs.filter((r) => r.status === "absent").map((r) => r.studentId),
+        dateRecords.filter((r) => r.status === "absent").map((r) => r.studentId),
       );
       setAbsentStudents(absent);
 
       const reasons: Record<string, string> = {};
-      todayRecs.forEach((r) => {
+      dateRecords.forEach((r) => {
         if (r.status === "absent" && r.reason) {
           reasons[r.studentId] = r.reason;
         }
@@ -101,7 +106,7 @@ export default function AttendancePage() {
   }
 
   async function handleBulkSubmit() {
-    if (!todayDayOfWeek) {
+    if (!selectedDayOfWeek) {
       alert("일요일에는 출석체크를 할 수 없습니다.");
       return;
     }
@@ -120,9 +125,9 @@ export default function AttendancePage() {
       const records: AttendanceRecord[] = students.map((student) => {
         const isAbsent = absentStudents.has(student.id);
         return {
-          id: `${student.id}-${today}`,
+          id: `${student.id}-${selectedDate}`,
           studentId: student.id,
-          date: today,
+          date: selectedDate,
           status: isAbsent ? "absent" : "present",
           reason: isAbsent ? absentReasons[student.id] : undefined,
           recordedAt: new Date().toISOString(),
@@ -172,12 +177,21 @@ export default function AttendancePage() {
     );
   }
 
-  if (!todayDayOfWeek) {
+  if (!selectedDayOfWeek) {
     return (
       <div className="min-h-screen bg-paper">
         <AttendanceHeader />
-        <div className="max-w-6xl mx-auto px-6 py-12 text-center">
-          <div className="text-lg text-muted">
+        <div className="max-w-6xl mx-auto px-6 py-12">
+          <div className="mb-6">
+            <label className="block text-sm text-muted mb-2">출석 날짜 선택</label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="form-input"
+            />
+          </div>
+          <div className="text-center text-lg text-muted">
             일요일에는 출석체크를 할 수 없습니다.
           </div>
         </div>
@@ -191,29 +205,47 @@ export default function AttendancePage() {
 
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* 헤더 */}
-        <div className="mb-6 flex items-end justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-ink mb-2">
-              오늘의 출석체크
-            </h1>
-            <p className="text-sm text-muted">
-              {today} ({todayDayOfWeek}요일) · 등원 예정 {students.length}명
-            </p>
+        <div className="mb-6">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-ink mb-2">
+                출석체크
+              </h1>
+              <p className="text-sm text-muted">
+                {selectedDate} ({selectedDayOfWeek}요일) · 등원 예정 {students.length}명
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Calendar size={16} className="text-muted" />
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="form-input text-sm py-1.5"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-muted">학년:</label>
+                <select
+                  value={gradeFilter}
+                  onChange={(e) => setGradeFilter(e.target.value)}
+                  className="form-input text-sm py-1.5"
+                >
+                  {gradeOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-muted">학년 필터:</label>
-            <select
-              value={gradeFilter}
-              onChange={(e) => setGradeFilter(e.target.value)}
-              className="form-input text-sm py-1.5"
-            >
-              {gradeOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </div>
+          {todayRecords.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 px-4 py-2 text-sm text-blue-800">
+              ℹ️ 이 날짜는 이미 출석 기록이 있습니다. 수정하려면 다시 저장하세요.
+            </div>
+          )}
         </div>
 
         {students.length === 0 ? (
