@@ -1,22 +1,14 @@
 "use client";
 
 import { ArrowLeft, User, Calendar, Award } from "lucide-react";
-import { usePathname } from "next/navigation";
 
 interface AdminSidebarProps {
+  activeTab: "students" | "vehicle" | "attendance";
+  onTabChange: (tab: "students" | "vehicle" | "attendance") => void;
   onLogout?: () => void;
 }
 
-export default function AdminSidebar({ onLogout }: AdminSidebarProps) {
-  const pathname = usePathname();
-
-  const isActive = (path: string) => {
-    if (path === "/admin") {
-      return pathname === "/admin";
-    }
-    return pathname?.startsWith(path);
-  };
-
+export default function AdminSidebar({ activeTab, onTabChange, onLogout }: AdminSidebarProps) {
   return (
     <aside className="w-[220px] border-r border-line flex flex-col bg-white">
       {/* 로고/타이틀 */}
@@ -28,39 +20,39 @@ export default function AdminSidebar({ onLogout }: AdminSidebarProps) {
       {/* 네비게이션 */}
       <nav className="flex-1 p-4">
         <div className="space-y-1">
-          <a
-            href="/admin"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded transition ${
-              isActive("/admin")
+          <button
+            onClick={() => onTabChange("students")}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded transition ${
+              activeTab === "students"
                 ? "bg-ink text-paper"
                 : "text-ink-soft hover:bg-line-soft hover:text-ink"
             }`}
           >
             <User size={18} strokeWidth={1.5} />
             <span className="text-sm font-medium">학생 관리</span>
-          </a>
-          <a
-            href="/admin/vehicle"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded transition ${
-              isActive("/admin/vehicle")
+          </button>
+          <button
+            onClick={() => onTabChange("vehicle")}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded transition ${
+              activeTab === "vehicle"
                 ? "bg-ink text-paper"
                 : "text-ink-soft hover:bg-line-soft hover:text-ink"
             }`}
           >
             <Calendar size={18} strokeWidth={1.5} />
             <span className="text-sm font-medium">차량 관리</span>
-          </a>
-          <a
-            href="/attendance"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded transition ${
-              isActive("/attendance")
+          </button>
+          <button
+            onClick={() => onTabChange("attendance")}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded transition ${
+              activeTab === "attendance"
                 ? "bg-ink text-paper"
                 : "text-ink-soft hover:bg-line-soft hover:text-ink"
             }`}
           >
             <Award size={18} strokeWidth={1.5} />
             <span className="text-sm font-medium">출석체크</span>
-          </a>
+          </button>
         </div>
       </nav>
 

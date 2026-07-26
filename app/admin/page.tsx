@@ -16,6 +16,7 @@ import {
   Award,
 } from "lucide-react";
 import AdminSidebar from "../../components/AdminSidebar";
+import VehicleManagement from "../../components/VehicleManagement";
 import {
   loadStudents,
   upsertStudent,
@@ -94,6 +95,7 @@ export default function AdminPage() {
   const [pwError, setPwError] = useState("");
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"students" | "vehicle" | "attendance">("students");
 
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState("");
@@ -399,11 +401,17 @@ export default function AdminPage() {
   // ─────────────────────────────────────────────
   return (
     <main className="min-h-screen bg-paper text-ink flex">
-      <AdminSidebar onLogout={handleLogout} />
+      <AdminSidebar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onLogout={handleLogout}
+      />
 
       {/* 메인 컨텐츠 */}
       <div className="flex-1 overflow-auto">
         <div className="px-6 lg:px-10 py-8 sm:py-10">
+        {activeTab === "students" && (
+          <>
         {dataLoading ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
             <div className="lg:col-span-1">
@@ -591,6 +599,18 @@ export default function AdminPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+          </>
+        )}
+
+        {activeTab === "vehicle" && (
+          <VehicleManagement />
+        )}
+
+        {activeTab === "attendance" && (
+          <div className="border border-line p-10 text-center text-muted">
+            출석체크 페이지 준비 중입니다.
           </div>
         )}
         </div>
