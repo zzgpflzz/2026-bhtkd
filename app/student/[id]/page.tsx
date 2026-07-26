@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import StarRating from "../../../components/StarRating";
 import Certificate from "../../../components/Certificate";
-import { findStudent, getStudentExams } from "../../../lib/storage";
+import { findStudent, getFinalExams } from "../../../lib/storage";
 import { RATING_GUIDE } from "../../../lib/types";
 import type { Student, Exam } from "../../../lib/types";
 
@@ -63,10 +63,10 @@ export default function StudentResultPage() {
         `🔍 [Student Page] Loading data for student ID: ${params.id}`,
       );
 
-      // 단일 학생과 심사 기록을 병렬로 로드
+      // 단일 학생과 최종저장된 심사 기록만 병렬로 로드 (임시저장본 제외)
       const [s, examList] = await Promise.all([
         findStudent(params.id),
-        getStudentExams(params.id),
+        getFinalExams(params.id),
       ]);
 
       setStudent(s);

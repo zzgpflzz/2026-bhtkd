@@ -1,9 +1,16 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
   "/admin/page": "app/admin/page.js",
+  "/api/attendance/route": "app/api/attendance/route.js",
+  "/admin/vehicle/page": "app/admin/vehicle/page.js",
+  "/attendance/monthly/page": "app/attendance/monthly/page.js",
+  "/attendance/perfect/page": "app/attendance/perfect/page.js",
+  "/attendance/students/page": "app/attendance/students/page.js",
   "/page": "app/page.js",
+  "/attendance/page": "app/attendance/page.js",
   "/student/[id]/page": "app/student/[id]/page.js",
   "/api/cache-warm/route": "app/api/cache-warm/route.js",
   "/api/upload/route": "app/api/upload/route.js",
+  "/api/vehicle/route": "app/api/vehicle/route.js",
   "/api/storage/route": "app/api/storage/route.js"
 }

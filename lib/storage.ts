@@ -268,6 +268,22 @@ export async function getStudentExams(studentId: string): Promise<Exam[]> {
     .sort((a, b) => (a.examDate < b.examDate ? 1 : -1)); // 최근순
 }
 
+// 임시저장본 조회 (어드민 전용)
+export async function getDraftExams(studentId: string): Promise<Exam[]> {
+  const list = await loadExams();
+  return list
+    .filter((e) => e.studentId === studentId && e.isDraft === true)
+    .sort((a, b) => (a.examDate < b.examDate ? 1 : -1)); // 최근순
+}
+
+// 최종저장본 조회 (학부모 페이지용)
+export async function getFinalExams(studentId: string): Promise<Exam[]> {
+  const list = await loadExams();
+  return list
+    .filter((e) => e.studentId === studentId && !e.isDraft)
+    .sort((a, b) => (a.examDate < b.examDate ? 1 : -1)); // 최근순
+}
+
 // ─────────────────────────────────────────────
 // 템플릿
 // ─────────────────────────────────────────────

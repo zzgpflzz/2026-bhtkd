@@ -132,6 +132,7 @@ export interface Exam {
   lifeHabits: LifeHabitRating;
   comment: string;
   passed: boolean;
+  isDraft?: boolean; // 임시저장 여부 (true: 임시저장, false/undefined: 최종저장)
 }
 
 export interface Student {

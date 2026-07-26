@@ -24,6 +24,7 @@ import {
   newStudentTemplate,
   newExamTemplate,
   getStudentExams,
+  getDraftExams,
   compressImageDataURL,
   uploadImageToStorage,
   getStudentCurrentGrade,
@@ -655,11 +656,15 @@ function StudentDetail({
   onDeleteExam: (id: string) => Promise<void>;
 }) {
   const [exams, setExams] = useState<Exam[]>([]);
+  const [draftExams, setDraftExams] = useState<Exam[]>([]);
+  const [showDraftModal, setShowDraftModal] = useState(false);
 
   useEffect(() => {
     (async () => {
       const examList = await getStudentExams(student.id);
-      setExams(examList || []);
+      const drafts = await getDraftExams(student.id);
+      setExams((examList || []).filter((e) => !e.isDraft)); // 최종저장본만
+      setDraftExams(drafts || []);
     })();
   }, [student.id, student]);
 
@@ -756,12 +761,22 @@ function StudentDetail({
       <div className="border border-line">
         <div className="p-4 border-b border-line flex items-center justify-between">
           <h2 className="text-base font-semibold text-ink">심사 이력</h2>
-          <button
-            onClick={onAddExam}
-            className="text-xs px-3 py-1.5 bg-ink hover:bg-ink/85 text-paper font-semibold inline-flex items-center gap-1 transition"
-          >
-            <Plus size={12} /> 새 심사 등록
-          </button>
+          <div className="flex gap-2">
+            {draftExams.length > 0 && (
+              <button
+                onClick={() => setShowDraftModal(true)}
+                className="text-xs px-3 py-1.5 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border border-yellow-300 font-semibold inline-flex items-center gap-1 transition"
+              >
+                <Save size={12} /> 임시저장본({draftExams.length})
+              </button>
+            )}
+            <button
+              onClick={onAddExam}
+              className="text-xs px-3 py-1.5 bg-ink hover:bg-ink/85 text-paper font-semibold inline-flex items-center gap-1 transition"
+            >
+              <Plus size={12} /> 새 심사 등록
+            </button>
+          </div>
         </div>
         <div className="max-h-[calc(100vh-450px)] overflow-y-auto">
           {exams.length === 0 ? (
@@ -769,56 +784,99 @@ function StudentDetail({
               등록된 심사 기록이 없습니다.
             </div>
           ) : (
-            exams.map((exam) => {
-              const hasDraft = !!localStorage.getItem(`exam-draft-${exam.id}`);
-              return (
-                <div
-                  key={exam.id}
-                  className="p-4 border-b border-line last:border-b-0"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Calendar size={14} className="text-muted" />
-                        <span className="text-sm font-medium text-ink">
-                          {exam.examDate.slice(0, 7).replace("-", "년 ") + "월"}
-                        </span>
-                        <span
-                          className={`text-[10px] px-1.5 py-0.5 ${exam.passed ? "border border-point text-point" : "border border-line text-muted"}`}
-                        >
-                          {exam.passed ? "합격" : "재심사"}
-                        </span>
-                        {hasDraft && (
-                          <span className="text-[10px] px-1.5 py-0.5 bg-yellow-100 text-yellow-700 border border-yellow-300">
-                            임시저장
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted">
-                        {exam.currentGrade} → {exam.targetGrade}
-                      </div>
+            exams.map((exam) => (
+              <div
+                key={exam.id}
+                className="p-4 border-b border-line last:border-b-0"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Calendar size={14} className="text-muted" />
+                      <span className="text-sm font-medium text-ink">
+                        {exam.examDate.slice(0, 7).replace("-", "년 ") + "월"}
+                      </span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 ${exam.passed ? "border border-point text-point" : "border border-line text-muted"}`}
+                      >
+                        {exam.passed ? "합격" : "재심사"}
+                      </span>
                     </div>
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => onEditExam(exam)}
-                        className="text-xs px-2 py-1 border border-line text-ink-soft hover:border-ink hover:text-ink transition"
-                      >
-                        <Edit3 size={11} />
-                      </button>
-                      <button
-                        onClick={() => onDeleteExam(exam.id)}
-                        className="text-xs px-2 py-1 border border-line text-muted hover:border-point hover:text-point transition"
-                      >
-                        <Trash2 size={11} />
-                      </button>
+                    <div className="text-xs text-muted">
+                      {exam.currentGrade} → {exam.targetGrade}
                     </div>
                   </div>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => onEditExam(exam)}
+                      className="text-xs px-2 py-1 border border-line text-ink-soft hover:border-ink hover:text-ink transition"
+                    >
+                      <Edit3 size={11} />
+                    </button>
+                    <button
+                      onClick={() => onDeleteExam(exam.id)}
+                      className="text-xs px-2 py-1 border border-line text-muted hover:border-point hover:text-point transition"
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
                 </div>
-              );
-            })
+              </div>
+            ))
           )}
         </div>
       </div>
+
+      {/* 임시저장본 모달 */}
+      {showDraftModal && (
+        <div
+          className="fixed inset-0 bg-ink/40 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowDraftModal(false)}
+        >
+          <div
+            className="bg-paper border border-line max-w-2xl w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-ink">임시저장본</h3>
+              <button
+                onClick={() => setShowDraftModal(false)}
+                className="p-1.5 hover:bg-line-soft"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto space-y-2">
+              {draftExams.map((draft) => (
+                <div
+                  key={draft.id}
+                  className="p-4 border border-line hover:border-ink transition cursor-pointer"
+                  onClick={() => {
+                    setShowDraftModal(false);
+                    onEditExam(draft);
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Calendar size={14} className="text-muted" />
+                    <span className="text-sm font-medium text-ink">
+                      {draft.examDate.slice(0, 7).replace("-", "년 ") + "월"}
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.5 bg-yellow-100 text-yellow-700 border border-yellow-300">
+                      임시저장
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted">
+                    {draft.currentGrade} → {draft.targetGrade}
+                  </div>
+                  <div className="text-xs text-muted mt-1">
+                    클릭하여 수정
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1064,107 +1122,43 @@ function ExamEditModal({
   onSave: (e: Exam) => Promise<void>;
   onDelete: () => Promise<void>;
 }) {
-  const draftKey = `exam-draft-${exam.id}`;
+  const [form, setForm] = useState<Exam>(exam);
+  const [saving, setSaving] = useState(false);
 
-  // 컴포넌트 마운트 시 임시저장 데이터 확인 및 자동 로드
-  const [form, setForm] = useState<Exam>(() => {
-    console.log("[임시저장] useState 초기화 - exam.id:", exam.id);
-    const draft = localStorage.getItem(draftKey);
-    console.log("[임시저장] localStorage에서 draft 확인:", draft ? "있음" : "없음");
-    if (draft) {
-      try {
-        const parsed = JSON.parse(draft) as Exam;
-        console.log("[임시저장] draft 파싱 성공, 데이터 로드");
-        return parsed;
-      } catch (err) {
-        console.error("[임시저장] draft 파싱 실패:", err);
-        return exam;
-      }
-    }
-    console.log("[임시저장] draft 없음, 원본 exam 사용");
-    return exam;
-  });
-
-  const [hasDraft, setHasDraft] = useState(() => {
-    const has = !!localStorage.getItem(draftKey);
-    console.log("[임시저장] hasDraft 초기값:", has);
-    return has;
-  });
-
-  // exam.id가 변경될 때마다 (다른 심사를 열거나 새로고침 후) 임시저장본 확인
-  useEffect(() => {
-    console.log("[임시저장] useEffect 실행 - exam.id:", exam.id, "draftKey:", draftKey);
-    const draft = localStorage.getItem(draftKey);
-    console.log("[임시저장] useEffect에서 draft 확인:", draft ? "있음" : "없음");
-
-    if (draft) {
-      try {
-        const parsed = JSON.parse(draft) as Exam;
-        console.log("[임시저장] useEffect에서 draft 로드 성공");
-        setForm(parsed);
-        setHasDraft(true);
-      } catch (err) {
-        console.error("[임시저장] useEffect에서 draft 파싱 실패:", err);
-        setForm(exam);
-        setHasDraft(false);
-      }
-    } else {
-      console.log("[임시저장] useEffect - draft 없음, 원본 exam으로 초기화");
-      setForm(exam);
-      setHasDraft(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exam.id, draftKey]);
-
-  const update = <K extends keyof Exam>(key: K, value: Exam[K]) => {
-    console.log("[임시저장] form 업데이트 - key:", key);
+  const update = <K extends keyof Exam>(key: K, value: Exam[K]) =>
     setForm((p) => ({ ...p, [key]: value }));
+
+  // 임시저장하기 (Firebase에 isDraft=true로 저장)
+  const saveDraft = async () => {
+    setSaving(true);
+    try {
+      const draftData = { ...form, isDraft: true };
+      await upsertExam(draftData);
+      alert("임시저장되었습니다.");
+      onClose(); // 저장 후 모달 닫기
+    } catch (error) {
+      console.error("임시저장 실패:", error);
+      alert("임시저장에 실패했습니다: " + String(error));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  // 임시저장하기
-  const saveDraft = () => {
-    console.log("[임시저장] saveDraft 호출");
-    console.log("[임시저장] 저장할 form 데이터:", form);
-    console.log("[임시저장] draftKey:", draftKey);
-
-    const jsonString = JSON.stringify(form);
-    console.log("[임시저장] JSON 문자열 길이:", jsonString.length);
-
-    localStorage.setItem(draftKey, jsonString);
-    console.log("[임시저장] localStorage 저장 완료");
-
-    // 저장 확인
-    const saved = localStorage.getItem(draftKey);
-    console.log("[임시저장] 저장 검증:", saved ? "성공" : "실패");
-
-    alert("임시저장되었습니다.");
-    setHasDraft(true);
-  };
-
-  // 임시저장 삭제
-  const clearDraft = () => {
-    console.log("[임시저장] clearDraft 호출 - draftKey:", draftKey);
-    localStorage.removeItem(draftKey);
-
-    // 삭제 확인
-    const check = localStorage.getItem(draftKey);
-    console.log("[임시저장] 삭제 검증:", check ? "실패(아직 있음)" : "성공");
-
-    setHasDraft(false);
-  };
-
+  // 최종 저장하기 (isDraft=false로 저장)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("[임시저장] handleSubmit - 최종 저장 시작");
-    console.log("[임시저장] 최종 저장할 form 데이터:", form);
-
-    await onSave(form);
-    console.log("[임시저장] 최종 저장 완료, 임시저장 삭제");
-    clearDraft(); // 저장 성공 시 임시저장 삭제
+    setSaving(true);
+    try {
+      const finalData = { ...form, isDraft: false };
+      await onSave(finalData);
+    } catch (error) {
+      console.error("최종 저장 실패:", error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleClose = () => {
-    console.log("[임시저장] 모달 닫기");
     onClose();
   };
 
@@ -1176,7 +1170,14 @@ function ExamEditModal({
       >
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold text-ink">심사 정보 입력</h3>
+            <h3 className="text-lg font-semibold text-ink">
+              심사 정보 입력
+              {exam.isDraft && (
+                <span className="ml-2 text-xs px-2 py-1 bg-yellow-100 text-yellow-700 border border-yellow-300">
+                  임시저장본
+                </span>
+              )}
+            </h3>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -1189,19 +1190,6 @@ function ExamEditModal({
             </button>
           </div>
         </div>
-
-        {hasDraft && (
-          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm flex items-center justify-between">
-            <span>임시저장된 내용이 자동으로 불러와졌습니다.</span>
-            <button
-              type="button"
-              onClick={clearDraft}
-              className="text-xs underline hover:no-underline"
-            >
-              임시저장 삭제
-            </button>
-          </div>
-        )}
 
         <Section title="기본 정보">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:items-end">
@@ -1355,7 +1343,8 @@ function ExamEditModal({
           <button
             type="button"
             onClick={onDelete}
-            className="px-4 py-2.5 border border-line text-point hover:bg-point hover:text-white transition"
+            disabled={saving}
+            className="px-4 py-2.5 border border-line text-point hover:bg-point hover:text-white transition disabled:opacity-50"
           >
             심사 기록 삭제
           </button>
@@ -1363,22 +1352,25 @@ function ExamEditModal({
             <button
               type="button"
               onClick={saveDraft}
-              className="px-4 py-2.5 border border-line text-ink-soft hover:border-ink hover:text-ink inline-flex items-center justify-center gap-2"
+              disabled={saving}
+              className="px-4 py-2.5 border border-line text-ink-soft hover:border-ink hover:text-ink inline-flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <Save size={16} /> 임시저장
+              <Save size={16} /> {saving ? "저장 중..." : "임시저장"}
             </button>
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2.5 border border-line text-ink-soft hover:border-ink hover:text-ink"
+              disabled={saving}
+              className="px-4 py-2.5 border border-line text-ink-soft hover:border-ink hover:text-ink disabled:opacity-50"
             >
               취소
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 bg-ink hover:bg-ink/85 text-paper font-semibold inline-flex items-center justify-center gap-2 transition"
+              disabled={saving}
+              className="px-5 py-2.5 bg-ink hover:bg-ink/85 text-paper font-semibold inline-flex items-center justify-center gap-2 transition disabled:opacity-50"
             >
-              <Save size={16} /> 저장하기
+              <Save size={16} /> {saving ? "저장 중..." : "최종 저장"}
             </button>
           </div>
         </div>
