@@ -1,10 +1,10 @@
 "use client";
 
-import { ArrowLeft, User, Calendar, Award } from "lucide-react";
+import { ArrowLeft, User, Calendar, Award, Phone } from "lucide-react";
 
 interface AdminSidebarProps {
-  activeTab: "students" | "vehicle" | "attendance";
-  onTabChange: (tab: "students" | "vehicle" | "attendance") => void;
+  activeTab: "students" | "vehicle" | "attendance" | "contacts";
+  onTabChange: (tab: "students" | "vehicle" | "attendance" | "contacts") => void;
   onLogout?: () => void;
 }
 
@@ -52,6 +52,17 @@ export default function AdminSidebar({ activeTab, onTabChange, onLogout }: Admin
           >
             <Award size={18} strokeWidth={1.5} />
             <span className="text-sm font-medium">출석체크</span>
+          </button>
+          <button
+            onClick={() => onTabChange("contacts")}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded transition ${
+              activeTab === "contacts"
+                ? "bg-ink text-paper"
+                : "text-ink-soft hover:bg-line-soft hover:text-ink"
+            }`}
+          >
+            <Phone size={18} strokeWidth={1.5} />
+            <span className="text-sm font-medium">학부모 연락처</span>
           </button>
         </div>
       </nav>

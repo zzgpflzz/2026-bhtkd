@@ -145,6 +145,8 @@ export interface Student {
   hasBlackBelt?: boolean; // 유품자 여부 (admin 전용)
   isColorBelt?: boolean; // 유급자 여부 (admin 전용)
   currentGrade?: Grade; // 현재 급수 (상장 생성용)
+  parentPhone?: string; // 학부모 연락처
+  parentName?: string; // 학부모 이름
 }
 
 export const CURRENT_GRADES: Grade[] = Object.values(GRADES_BY_CATEGORY).flat();
