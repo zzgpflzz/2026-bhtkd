@@ -112,6 +112,11 @@ export default function VehicleAdminPage() {
     }
   };
 
+  const handleLogout = () => {
+    setAuthed(false);
+    sessionStorage.removeItem("baekho-admin-auth");
+  };
+
   if (loading) {
     return (
       <main className="min-h-screen bg-paper text-ink flex items-center justify-center p-4">
@@ -135,11 +140,6 @@ export default function VehicleAdminPage() {
       </main>
     );
   }
-
-  const handleLogout = () => {
-    setAuthed(false);
-    sessionStorage.removeItem("baekho-admin-auth");
-  };
 
   return (
     <main className="min-h-screen bg-paper text-ink flex">
