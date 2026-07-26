@@ -769,45 +769,53 @@ function StudentDetail({
               등록된 심사 기록이 없습니다.
             </div>
           ) : (
-            exams.map((exam) => (
-              <div
-                key={exam.id}
-                className="p-4 border-b border-line last:border-b-0"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Calendar size={14} className="text-muted" />
-                      <span className="text-sm font-medium text-ink">
-                        {exam.examDate.slice(0, 7).replace("-", "년 ") + "월"}
-                      </span>
-                      <span
-                        className={`text-[10px] px-1.5 py-0.5 ${exam.passed ? "border border-point text-point" : "border border-line text-muted"}`}
+            exams.map((exam) => {
+              const hasDraft = !!localStorage.getItem(`exam-draft-${exam.id}`);
+              return (
+                <div
+                  key={exam.id}
+                  className="p-4 border-b border-line last:border-b-0"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Calendar size={14} className="text-muted" />
+                        <span className="text-sm font-medium text-ink">
+                          {exam.examDate.slice(0, 7).replace("-", "년 ") + "월"}
+                        </span>
+                        <span
+                          className={`text-[10px] px-1.5 py-0.5 ${exam.passed ? "border border-point text-point" : "border border-line text-muted"}`}
+                        >
+                          {exam.passed ? "합격" : "재심사"}
+                        </span>
+                        {hasDraft && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-yellow-100 text-yellow-700 border border-yellow-300">
+                            임시저장
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted">
+                        {exam.currentGrade} → {exam.targetGrade}
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => onEditExam(exam)}
+                        className="text-xs px-2 py-1 border border-line text-ink-soft hover:border-ink hover:text-ink transition"
                       >
-                        {exam.passed ? "합격" : "재심사"}
-                      </span>
+                        <Edit3 size={11} />
+                      </button>
+                      <button
+                        onClick={() => onDeleteExam(exam.id)}
+                        className="text-xs px-2 py-1 border border-line text-muted hover:border-point hover:text-point transition"
+                      >
+                        <Trash2 size={11} />
+                      </button>
                     </div>
-                    <div className="text-xs text-muted">
-                      {exam.currentGrade} → {exam.targetGrade}
-                    </div>
-                  </div>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => onEditExam(exam)}
-                      className="text-xs px-2 py-1 border border-line text-ink-soft hover:border-ink hover:text-ink transition"
-                    >
-                      <Edit3 size={11} />
-                    </button>
-                    <button
-                      onClick={() => onDeleteExam(exam.id)}
-                      className="text-xs px-2 py-1 border border-line text-muted hover:border-point hover:text-point transition"
-                    >
-                      <Trash2 size={11} />
-                    </button>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
@@ -1103,16 +1111,6 @@ function ExamEditModal({
     setHasDraft(true);
   };
 
-  // 임시저장 불러오기
-  const loadDraft = () => {
-    const draft = localStorage.getItem(draftKey);
-    if (draft) {
-      const parsed = JSON.parse(draft) as Exam;
-      setForm(parsed);
-      alert("임시저장된 내용을 불러왔습니다.");
-    }
-  };
-
   // 임시저장 삭제
   const clearDraft = () => {
     localStorage.removeItem(draftKey);
@@ -1140,15 +1138,6 @@ function ExamEditModal({
             <h3 className="text-lg font-semibold text-ink">심사 정보 입력</h3>
           </div>
           <div className="flex items-center gap-2">
-            {hasDraft && (
-              <button
-                type="button"
-                onClick={loadDraft}
-                className="text-xs px-3 py-1.5 bg-point/10 text-point border border-point/30 hover:bg-point/20 transition"
-              >
-                임시저장 불러오기
-              </button>
-            )}
             <button
               type="button"
               onClick={handleClose}
@@ -1159,6 +1148,19 @@ function ExamEditModal({
             </button>
           </div>
         </div>
+
+        {hasDraft && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm flex items-center justify-between">
+            <span>임시저장된 내용이 자동으로 불러와졌습니다.</span>
+            <button
+              type="button"
+              onClick={clearDraft}
+              className="text-xs underline hover:no-underline"
+            >
+              임시저장 삭제
+            </button>
+          </div>
+        )}
 
         <Section title="기본 정보">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:items-end">
