@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import AdminSidebar from "../../components/AdminSidebar";
 import VehicleManagement from "../../components/VehicleManagement";
+import AttendanceManagement from "../../components/AttendanceManagement";
 import {
   loadStudents,
   upsertStudent,
@@ -609,9 +610,7 @@ export default function AdminPage() {
         )}
 
         {activeTab === "attendance" && (
-          <div className="border border-line p-10 text-center text-muted">
-            출석체크 페이지 준비 중입니다.
-          </div>
+          <AttendanceManagement />
         )}
         </div>
 
