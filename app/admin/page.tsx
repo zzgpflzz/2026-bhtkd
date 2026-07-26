@@ -1068,62 +1068,103 @@ function ExamEditModal({
 
   // 컴포넌트 마운트 시 임시저장 데이터 확인 및 자동 로드
   const [form, setForm] = useState<Exam>(() => {
+    console.log("[임시저장] useState 초기화 - exam.id:", exam.id);
     const draft = localStorage.getItem(draftKey);
+    console.log("[임시저장] localStorage에서 draft 확인:", draft ? "있음" : "없음");
     if (draft) {
       try {
-        return JSON.parse(draft) as Exam;
-      } catch {
+        const parsed = JSON.parse(draft) as Exam;
+        console.log("[임시저장] draft 파싱 성공, 데이터 로드");
+        return parsed;
+      } catch (err) {
+        console.error("[임시저장] draft 파싱 실패:", err);
         return exam;
       }
     }
+    console.log("[임시저장] draft 없음, 원본 exam 사용");
     return exam;
   });
 
   const [hasDraft, setHasDraft] = useState(() => {
-    return !!localStorage.getItem(draftKey);
+    const has = !!localStorage.getItem(draftKey);
+    console.log("[임시저장] hasDraft 초기값:", has);
+    return has;
   });
 
   // exam.id가 변경될 때마다 (다른 심사를 열거나 새로고침 후) 임시저장본 확인
   useEffect(() => {
+    console.log("[임시저장] useEffect 실행 - exam.id:", exam.id, "draftKey:", draftKey);
     const draft = localStorage.getItem(draftKey);
+    console.log("[임시저장] useEffect에서 draft 확인:", draft ? "있음" : "없음");
+
     if (draft) {
       try {
         const parsed = JSON.parse(draft) as Exam;
+        console.log("[임시저장] useEffect에서 draft 로드 성공");
         setForm(parsed);
         setHasDraft(true);
-      } catch {
+      } catch (err) {
+        console.error("[임시저장] useEffect에서 draft 파싱 실패:", err);
         setForm(exam);
         setHasDraft(false);
       }
     } else {
+      console.log("[임시저장] useEffect - draft 없음, 원본 exam으로 초기화");
       setForm(exam);
       setHasDraft(false);
     }
-  }, [exam.id, draftKey, exam]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exam.id, draftKey]);
 
-  const update = <K extends keyof Exam>(key: K, value: Exam[K]) =>
+  const update = <K extends keyof Exam>(key: K, value: Exam[K]) => {
+    console.log("[임시저장] form 업데이트 - key:", key);
     setForm((p) => ({ ...p, [key]: value }));
+  };
 
   // 임시저장하기
   const saveDraft = () => {
-    localStorage.setItem(draftKey, JSON.stringify(form));
+    console.log("[임시저장] saveDraft 호출");
+    console.log("[임시저장] 저장할 form 데이터:", form);
+    console.log("[임시저장] draftKey:", draftKey);
+
+    const jsonString = JSON.stringify(form);
+    console.log("[임시저장] JSON 문자열 길이:", jsonString.length);
+
+    localStorage.setItem(draftKey, jsonString);
+    console.log("[임시저장] localStorage 저장 완료");
+
+    // 저장 확인
+    const saved = localStorage.getItem(draftKey);
+    console.log("[임시저장] 저장 검증:", saved ? "성공" : "실패");
+
     alert("임시저장되었습니다.");
     setHasDraft(true);
   };
 
   // 임시저장 삭제
   const clearDraft = () => {
+    console.log("[임시저장] clearDraft 호출 - draftKey:", draftKey);
     localStorage.removeItem(draftKey);
+
+    // 삭제 확인
+    const check = localStorage.getItem(draftKey);
+    console.log("[임시저장] 삭제 검증:", check ? "실패(아직 있음)" : "성공");
+
     setHasDraft(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("[임시저장] handleSubmit - 최종 저장 시작");
+    console.log("[임시저장] 최종 저장할 form 데이터:", form);
+
     await onSave(form);
+    console.log("[임시저장] 최종 저장 완료, 임시저장 삭제");
     clearDraft(); // 저장 성공 시 임시저장 삭제
   };
 
   const handleClose = () => {
+    console.log("[임시저장] 모달 닫기");
     onClose();
   };
 
