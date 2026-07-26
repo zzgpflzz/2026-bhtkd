@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Save, Edit3, X, Search } from "lucide-react";
-import AdminSidebar from "../../../components/AdminSidebar";
+import { ArrowLeft, Plus, Trash2, Save, Edit3, X, Search } from "lucide-react";
 import {
   loadVehicleSchedules,
   upsertVehicleSchedule,
@@ -112,11 +111,6 @@ export default function VehicleAdminPage() {
     }
   };
 
-  const handleLogout = () => {
-    setAuthed(false);
-    sessionStorage.removeItem("baekho-admin-auth");
-  };
-
   if (loading) {
     return (
       <main className="min-h-screen bg-paper text-ink flex items-center justify-center p-4">
@@ -142,11 +136,27 @@ export default function VehicleAdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-paper text-ink flex">
-      <AdminSidebar onLogout={handleLogout} />
+    <main className="min-h-screen bg-paper text-ink">
+      <header className="border-b border-line">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-5 flex items-center justify-between">
+          <div>
+            <div className="text-xs text-muted">ADMIN</div>
+            <h1 className="text-xl sm:text-2xl font-semibold text-ink mt-0.5">
+              차량 관리
+            </h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <a
+              href="/admin"
+              className="text-sm text-ink-soft hover:text-ink inline-flex items-center gap-1"
+            >
+              <ArrowLeft size={14} /> 학생 관리로
+            </a>
+          </div>
+        </div>
+      </header>
 
-      <div className="flex-1 overflow-auto">
-        <div className="px-6 lg:px-10 py-8 sm:py-10">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8 sm:py-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
             <div className="border border-line mb-4">
@@ -263,8 +273,6 @@ export default function VehicleAdminPage() {
           onDelete={() => handleDeleteVehicle(editingVehicle.id)}
         />
       )}
-        </div>
-      </div>
     </main>
   );
 }
