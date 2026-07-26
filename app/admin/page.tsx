@@ -14,6 +14,7 @@ import {
   Eye,
   Calendar,
   Award,
+  User,
 } from "lucide-react";
 import {
   loadStudents,
@@ -397,45 +398,63 @@ export default function AdminPage() {
   // 관리자 메인
   // ─────────────────────────────────────────────
   return (
-    <main className="min-h-screen bg-paper text-ink">
-      <header className="border-b border-line">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-5 flex items-center justify-between">
-          <div>
-            <div className="text-xs text-muted">ADMIN</div>
-            <h1 className="text-xl sm:text-2xl font-semibold text-ink mt-0.5">
-              학생 관리
-            </h1>
-          </div>
-          <div className="flex items-center gap-3">
+    <main className="min-h-screen bg-paper text-ink flex">
+      {/* 왼쪽 사이드바 */}
+      <aside className="w-[220px] border-r border-line flex flex-col bg-white">
+        {/* 로고/타이틀 */}
+        <div className="p-6 border-b border-line">
+          <div className="text-xs text-muted mb-1">ADMIN</div>
+          <h1 className="text-lg font-bold text-ink">백호태권도</h1>
+        </div>
+
+        {/* 네비게이션 */}
+        <nav className="flex-1 p-4">
+          <div className="space-y-1">
+            <a
+              href="/admin"
+              className="flex items-center gap-3 px-3 py-2.5 bg-ink text-paper rounded transition"
+            >
+              <User size={18} strokeWidth={1.5} />
+              <span className="text-sm font-medium">학생 관리</span>
+            </a>
             <a
               href="/admin/vehicle"
-              className="text-sm px-4 py-2 border border-line hover:border-ink text-ink-soft hover:text-ink font-semibold transition"
+              className="flex items-center gap-3 px-3 py-2.5 text-ink-soft hover:bg-line-soft hover:text-ink rounded transition"
             >
-              차량 관리
+              <Calendar size={18} strokeWidth={1.5} />
+              <span className="text-sm font-medium">차량 관리</span>
             </a>
             <a
               href="/attendance"
-              className="text-sm px-4 py-2 bg-point hover:bg-point-dark text-white font-semibold transition"
+              className="flex items-center gap-3 px-3 py-2.5 text-ink-soft hover:bg-line-soft hover:text-ink rounded transition"
             >
-              출석체크
-            </a>
-            <button
-              onClick={handleLogout}
-              className="text-xs px-3 py-1.5 border border-line text-muted hover:border-ink hover:text-ink transition"
-            >
-              로그아웃
-            </button>
-            <a
-              href="/"
-              className="text-sm text-ink-soft hover:text-ink inline-flex items-center gap-1"
-            >
-              <ArrowLeft size={14} /> 메인으로
+              <Award size={18} strokeWidth={1.5} />
+              <span className="text-sm font-medium">출석체크</span>
             </a>
           </div>
-        </div>
-      </header>
+        </nav>
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8 sm:py-10">
+        {/* 하단 버튼 */}
+        <div className="p-4 border-t border-line space-y-2">
+          <a
+            href="/"
+            className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-ink-soft hover:text-ink transition"
+          >
+            <ArrowLeft size={14} />
+            메인으로
+          </a>
+          <button
+            onClick={handleLogout}
+            className="w-full px-3 py-2 text-sm border border-line text-muted hover:border-ink hover:text-ink rounded transition"
+          >
+            로그아웃
+          </button>
+        </div>
+      </aside>
+
+      {/* 메인 컨텐츠 */}
+      <div className="flex-1 overflow-auto">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8 py-8 sm:py-10">
         {dataLoading ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
             <div className="lg:col-span-1">
@@ -625,24 +644,25 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+        </div>
+
+        {editingStudent && (
+          <StudentEditModal
+            student={editingStudent}
+            onClose={() => setEditingStudent(null)}
+            onSave={handleSaveStudent}
+          />
+        )}
+
+        {editingExam && (
+          <ExamEditModal
+            exam={editingExam}
+            onClose={() => setEditingExam(null)}
+            onSave={handleSaveExam}
+            onDelete={() => handleDeleteExam(editingExam.id)}
+          />
+        )}
       </div>
-
-      {editingStudent && (
-        <StudentEditModal
-          student={editingStudent}
-          onClose={() => setEditingStudent(null)}
-          onSave={handleSaveStudent}
-        />
-      )}
-
-      {editingExam && (
-        <ExamEditModal
-          exam={editingExam}
-          onClose={() => setEditingExam(null)}
-          onSave={handleSaveExam}
-          onDelete={() => handleDeleteExam(editingExam.id)}
-        />
-      )}
     </main>
   );
 }
