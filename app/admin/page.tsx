@@ -775,7 +775,7 @@ function StudentDetail({
             {draftExams.length > 0 && (
               <button
                 onClick={() => setShowDraftModal(true)}
-                className="text-xs px-3 py-1.5 bg-[#FF6200]/10 hover:bg-[#FF6200]/20 text-[#FF6200] border border-[#FF6200]/30 font-semibold inline-flex items-center gap-1 transition"
+                className="text-xs px-3 py-1.5 bg-[#888888]/5 hover:bg-[#888888]/10 text-[#888888] border border-[#dcdee0] font-semibold inline-flex items-center gap-1 transition"
               >
                 <Save size={12} /> 임시저장본({draftExams.length})
               </button>
@@ -1383,7 +1383,7 @@ function ExamEditModal({
               type="button"
               onClick={saveDraft}
               disabled={saving}
-              className="px-4 py-2.5 border border-[#FF6200]/30 bg-[#FF6200]/10 text-[#FF6200] hover:bg-[#FF6200]/20 hover:border-[#FF6200]/50 inline-flex items-center justify-center gap-2 disabled:opacity-50 transition"
+              className="px-4 py-2.5 border border-[#dcdee0] bg-[#888888]/5 text-[#888888] hover:bg-[#888888]/10 hover:border-[#888888] inline-flex items-center justify-center gap-2 disabled:opacity-50 transition"
             >
               <Save size={16} /> {saving ? "저장 중..." : "임시저장"}
             </button>
