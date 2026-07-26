@@ -1163,9 +1163,9 @@ function ExamEditModal({
     setSaving(true);
     try {
       const draftData = { ...form, isDraft: true };
-      await upsertExam(draftData);
+      await onSave(draftData); // onSave를 호출하여 상위 컴포넌트 상태 업데이트
       alert("임시저장되었습니다.");
-      onClose(); // 저장 후 모달 닫기
+      // onSave 내부에서 onClose가 호출되므로 여기서는 호출하지 않음
     } catch (error) {
       console.error("임시저장 실패:", error);
       alert("임시저장에 실패했습니다: " + String(error));
