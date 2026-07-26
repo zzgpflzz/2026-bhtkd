@@ -1075,6 +1075,24 @@ function ExamEditModal({
     return !!localStorage.getItem(draftKey);
   });
 
+  // exam.id가 변경될 때마다 (다른 심사를 열거나 새로고침 후) 임시저장본 확인
+  useEffect(() => {
+    const draft = localStorage.getItem(draftKey);
+    if (draft) {
+      try {
+        const parsed = JSON.parse(draft) as Exam;
+        setForm(parsed);
+        setHasDraft(true);
+      } catch {
+        setForm(exam);
+        setHasDraft(false);
+      }
+    } else {
+      setForm(exam);
+      setHasDraft(false);
+    }
+  }, [exam.id, draftKey, exam]);
+
   const update = <K extends keyof Exam>(key: K, value: Exam[K]) =>
     setForm((p) => ({ ...p, [key]: value }));
 
