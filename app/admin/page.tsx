@@ -318,11 +318,16 @@ export default function AdminPage() {
     if (!confirm("이 심사 기록을 삭제하시겠습니까?")) return;
 
     setEditingExam(null);
-    if (selectedStudent) {
-      setSelectedStudent({ ...selectedStudent });
-    }
     try {
+      console.log("[삭제] 심사 삭제 시작 - ID:", id);
       await deleteExam(id);
+      console.log("[삭제] 심사 삭제 성공");
+
+      // UI 강제 업데이트
+      if (selectedStudent) {
+        console.log("[삭제] UI 강제 업데이트");
+        setSelectedStudent({ ...selectedStudent });
+      }
     } catch (error) {
       console.error("❌ Delete exam error:", error);
       alert("심사 삭제에 실패했습니다: " + String(error));
@@ -770,7 +775,7 @@ function StudentDetail({
             {draftExams.length > 0 && (
               <button
                 onClick={() => setShowDraftModal(true)}
-                className="text-xs px-3 py-1.5 bg-[#FF9D00]/10 hover:bg-[#FF9D00]/20 text-[#FF9D00] border border-[#FF9D00]/30 font-semibold inline-flex items-center gap-1 transition"
+                className="text-xs px-3 py-1.5 bg-[#FF6200]/10 hover:bg-[#FF6200]/20 text-[#FF6200] border border-[#FF6200]/30 font-semibold inline-flex items-center gap-1 transition"
               >
                 <Save size={12} /> 임시저장본({draftExams.length})
               </button>
@@ -870,7 +875,7 @@ function StudentDetail({
                         <span className="text-sm font-medium text-ink">
                           {draft.examDate.slice(0, 7).replace("-", "년 ") + "월"}
                         </span>
-                        <span className="text-[10px] px-1.5 py-0.5 bg-[#FF9D00]/10 text-[#FF9D00] border border-[#FF9D00]/30">
+                        <span className="text-[10px] px-1.5 py-0.5 bg-[#FF6200]/10 text-[#FF6200] border border-[#FF6200]/30">
                           임시저장
                         </span>
                       </div>
@@ -882,10 +887,13 @@ function StudentDetail({
                       </div>
                     </div>
                     <button
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.stopPropagation();
                         if (confirm("이 임시저장본을 삭제하시겠습니까?")) {
-                          onDeleteExam(draft.id);
+                          console.log("[임시저장본 삭제] 삭제 시작 - ID:", draft.id);
+                          await onDeleteExam(draft.id);
+                          console.log("[임시저장본 삭제] 삭제 완료, 모달 닫기");
+                          setShowDraftModal(false);
                         }
                       }}
                       className="text-xs px-2 py-1 border border-line text-muted hover:border-point hover:text-point transition shrink-0"
@@ -1195,7 +1203,7 @@ function ExamEditModal({
             <h3 className="text-lg font-semibold text-ink">
               심사 정보 입력
               {exam.isDraft && (
-                <span className="ml-2 text-xs px-2 py-1 bg-[#FF9D00]/10 text-[#FF9D00] border border-[#FF9D00]/30">
+                <span className="ml-2 text-xs px-2 py-1 bg-[#FF6200]/10 text-[#FF6200] border border-[#FF6200]/30">
                   임시저장본
                 </span>
               )}
@@ -1375,7 +1383,7 @@ function ExamEditModal({
               type="button"
               onClick={saveDraft}
               disabled={saving}
-              className="px-4 py-2.5 border border-[#FF9D00]/30 bg-[#FF9D00]/10 text-[#FF9D00] hover:bg-[#FF9D00]/20 hover:border-[#FF9D00]/50 inline-flex items-center justify-center gap-2 disabled:opacity-50 transition"
+              className="px-4 py-2.5 border border-[#FF6200]/30 bg-[#FF6200]/10 text-[#FF6200] hover:bg-[#FF6200]/20 hover:border-[#FF6200]/50 inline-flex items-center justify-center gap-2 disabled:opacity-50 transition"
             >
               <Save size={16} /> {saving ? "저장 중..." : "임시저장"}
             </button>
