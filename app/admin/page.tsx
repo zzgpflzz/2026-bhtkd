@@ -19,6 +19,8 @@ import AdminSidebar from "../../components/AdminSidebar";
 import VehicleManagement from "../../components/VehicleManagement";
 import AttendanceManagement from "../../components/AttendanceManagement";
 import ParentContact from "../../components/ParentContact";
+import ConsultManagement from "../../components/ConsultManagement";
+import TuitionManagement from "../../components/TuitionManagement";
 import {
   loadStudents,
   upsertStudent,
@@ -97,7 +99,7 @@ export default function AdminPage() {
   const [pwError, setPwError] = useState("");
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"students" | "vehicle" | "attendance" | "contacts">("students");
+  const [activeTab, setActiveTab] = useState<"students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition">("students");
 
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState("");
@@ -616,6 +618,14 @@ export default function AdminPage() {
 
         {activeTab === "contacts" && (
           <ParentContact />
+        )}
+
+        {activeTab === "consult" && (
+          <ConsultManagement />
+        )}
+
+        {activeTab === "tuition" && (
+          <TuitionManagement />
         )}
         </div>
 

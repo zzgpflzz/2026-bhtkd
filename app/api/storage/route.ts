@@ -4,7 +4,7 @@ import { getAdminDb } from "@/lib/firebase-admin";
 export const runtime = "nodejs"; // firebase-admin은 Node.js 런타임 필요
 export const revalidate = 60; // 60초 캐싱 (어드민 전용이므로 길게 설정)
 
-type Collection = "students" | "exams";
+type Collection = "students" | "exams" | "consults" | "tuitions";
 
 // ─────────────────────────────────────────────
 // 서버 메모리 캐시 (Vercel 서버리스 인스턴스 간 공유되지 않음)
@@ -127,7 +127,7 @@ export async function GET(req: NextRequest) {
     await ensureMigrated();
 
     // 단일 문서 조회: GET /api/storage?type=students&id=xxx
-    if (id && (type === "students" || type === "exams")) {
+    if (id && (type === "students" || type === "exams" || type === "consults" || type === "tuitions")) {
       const doc = await getDoc(type as Collection, id);
       console.log(
         `[API GET ${type}/${id}] ${doc ? "found" : "not found"} · ${(performance.now() - t0).toFixed(0)}ms`,
@@ -136,12 +136,24 @@ export async function GET(req: NextRequest) {
     }
 
     // 컬렉션 전체 조회
-    if (type === "students" || type === "exams") {
+    if (type === "students" || type === "exams" || type === "consults" || type === "tuitions") {
       const list = await listCollection(type as Collection);
       console.log(
         `[API GET ${type}] ${list.length} docs · ${(performance.now() - t0).toFixed(0)}ms`,
       );
       return NextResponse.json(list);
+    }
+
+    // consult 전용 응답 (consults 배열로)
+    if (type === "consult") {
+      const list = await listCollection("consults");
+      return NextResponse.json({ consults: list });
+    }
+
+    // tuition 전용 응답 (tuitions 배열로)
+    if (type === "tuition") {
+      const list = await listCollection("tuitions");
+      return NextResponse.json({ tuitions: list });
     }
 
     // 둘 다 조회
@@ -197,13 +209,24 @@ export async function DELETE(req: NextRequest) {
   const t0 = performance.now();
   const url = new URL(req.url);
   const type = url.searchParams.get("type");
-  const id = url.searchParams.get("id");
+  let id = url.searchParams.get("id");
+
+  // consult, tuition은 body에서 id 읽기
+  if (!id && (type === "consult" || type === "tuition")) {
+    try {
+      const body = await req.json();
+      id = body.id;
+    } catch (e) {
+      // ignore
+    }
+  }
+
   console.log(`[API DELETE] start type=${type} id=${id}`);
 
-  if (!type || !id || (type !== "students" && type !== "exams")) {
+  if (!type || !id) {
     console.warn(`[API DELETE] 400 invalid params type=${type} id=${id}`);
     return NextResponse.json(
-      { error: "type(students|exams) and id are required" },
+      { error: "type and id are required" },
       { status: 400 },
     );
   }
@@ -211,8 +234,14 @@ export async function DELETE(req: NextRequest) {
   try {
     if (type === "students") {
       await deleteStudentCascade(id);
-    } else {
+    } else if (type === "exams") {
       await deleteDoc("exams", id);
+    } else if (type === "consult") {
+      await deleteDoc("consults", id);
+    } else if (type === "tuition") {
+      await deleteDoc("tuitions", id);
+    } else {
+      return NextResponse.json({ error: "Invalid type" }, { status: 400 });
     }
     console.log(
       `[API DELETE] OK type=${type} id=${id} ${(performance.now() - t0).toFixed(0)}ms`,
@@ -224,15 +253,29 @@ export async function DELETE(req: NextRequest) {
   }
 }
 
-// 하위 호환: 옛 코드가 POST { type, data: [...] } 보내면 batch로 일괄 set
+// POST: consult/tuition 단건 저장 또는 bulk 저장
 export async function POST(req: NextRequest) {
   try {
+    const url = new URL(req.url);
+    const type = url.searchParams.get("type");
     const body = await req.json();
-    const { type, data } = body ?? {};
+
+    // consult, tuition 단건 저장
+    if (type === "consult" || type === "tuition") {
+      const collection = type === "consult" ? "consults" : "tuitions";
+      if (!body?.id) {
+        return NextResponse.json({ error: "id is required" }, { status: 400 });
+      }
+      await setDoc(collection, body.id, body);
+      return NextResponse.json({ ok: true });
+    }
+
+    // 하위 호환: 옛 코드가 POST { type, data: [...] } 보내면 batch로 일괄 set
+    const { type: bulkType, data } = body ?? {};
     if (
-      !type ||
+      !bulkType ||
       !Array.isArray(data) ||
-      (type !== "students" && type !== "exams")
+      (bulkType !== "students" && bulkType !== "exams")
     ) {
       return NextResponse.json({ error: "Invalid bulk payload" }, { status: 400 });
     }
@@ -241,7 +284,7 @@ export async function POST(req: NextRequest) {
       const batch = db.batch();
       for (const item of data.slice(i, i + 400)) {
         if (!item?.id) throw new Error("Each item must have an id");
-        batch.set(db.collection(type as Collection).doc(item.id), item);
+        batch.set(db.collection(bulkType as Collection).doc(item.id), item);
       }
       await batch.commit();
     }

@@ -1,10 +1,10 @@
 "use client";
 
-import { ArrowLeft, User, Calendar, Award, Phone } from "lucide-react";
+import { ArrowLeft, User, Calendar, Award, Phone, MessageSquare, DollarSign } from "lucide-react";
 
 interface AdminSidebarProps {
-  activeTab: "students" | "vehicle" | "attendance" | "contacts";
-  onTabChange: (tab: "students" | "vehicle" | "attendance" | "contacts") => void;
+  activeTab: "students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition";
+  onTabChange: (tab: "students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition") => void;
   onLogout?: () => void;
 }
 
@@ -63,6 +63,28 @@ export default function AdminSidebar({ activeTab, onTabChange, onLogout }: Admin
           >
             <Phone size={18} strokeWidth={1.5} />
             <span className="text-sm font-medium">학부모 연락처</span>
+          </button>
+          <button
+            onClick={() => onTabChange("consult")}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded transition ${
+              activeTab === "consult"
+                ? "bg-ink text-paper"
+                : "text-ink-soft hover:bg-line-soft hover:text-ink"
+            }`}
+          >
+            <MessageSquare size={18} strokeWidth={1.5} />
+            <span className="text-sm font-medium">학부모 상담일지</span>
+          </button>
+          <button
+            onClick={() => onTabChange("tuition")}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded transition ${
+              activeTab === "tuition"
+                ? "bg-ink text-paper"
+                : "text-ink-soft hover:bg-line-soft hover:text-ink"
+            }`}
+          >
+            <DollarSign size={18} strokeWidth={1.5} />
+            <span className="text-sm font-medium">교육비 관리</span>
           </button>
         </div>
       </nav>

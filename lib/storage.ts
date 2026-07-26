@@ -8,6 +8,8 @@ import {
   VehicleSchedule,
   StudentVehicleInfo,
   VehicleStatus,
+  ConsultRecord,
+  TuitionPayment,
 } from "@/lib/types";
 
 // ─────────────────────────────────────────────
@@ -996,3 +998,145 @@ export const newStudentVehicleTemplate = (
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 });
+
+// ─────────────────────────────────────────────
+// 학부모 상담일지
+// ─────────────────────────────────────────────
+
+export async function loadConsultRecords(force = false): Promise<ConsultRecord[]> {
+  try {
+    const res = await fetch("/api/storage?type=consult", {
+      cache: force ? "no-store" : "default",
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return data.consults || [];
+  } catch (error) {
+    console.error("[loadConsultRecords] error:", error);
+    return [];
+  }
+}
+
+export async function upsertConsultRecord(record: ConsultRecord): Promise<void> {
+  const res = await fetch("/api/storage?type=consult", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(record),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`저장 실패: ${text}`);
+  }
+}
+
+export async function deleteConsultRecord(id: string): Promise<void> {
+  const res = await fetch("/api/storage?type=consult", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`삭제 실패: ${text}`);
+  }
+}
+
+export const newConsultRecordTemplate = (
+  studentId?: string,
+  studentName?: string,
+): ConsultRecord => ({
+  id: `consult-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+  studentId,
+  studentName: studentName || "",
+  parentName: "",
+  parentPhone: "",
+  consultDate: new Date().toISOString().split("T")[0],
+  content: "",
+  isProspective: !studentId, // studentId가 없으면 예비 학생
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+});
+
+// ─────────────────────────────────────────────
+// 교육비 관리
+// ─────────────────────────────────────────────
+
+export async function loadTuitionPayments(force = false): Promise<TuitionPayment[]> {
+  try {
+    const res = await fetch("/api/storage?type=tuition", {
+      cache: force ? "no-store" : "default",
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return data.tuitions || [];
+  } catch (error) {
+    console.error("[loadTuitionPayments] error:", error);
+    return [];
+  }
+}
+
+export async function upsertTuitionPayment(payment: TuitionPayment): Promise<void> {
+  const res = await fetch("/api/storage?type=tuition", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payment),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`저장 실패: ${text}`);
+  }
+}
+
+export async function deleteTuitionPayment(id: string): Promise<void> {
+  const res = await fetch("/api/storage?type=tuition", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`삭제 실패: ${text}`);
+  }
+}
+
+export const newTuitionPaymentTemplate = (
+  studentId: string,
+  studentName: string,
+): TuitionPayment => {
+  const today = new Date();
+  const month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+  const dueDate = `${month}-05`; // 매월 5일 기한
+
+  return {
+    id: `tuition-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    studentId,
+    studentName,
+    month,
+    dueDate,
+    amount: 0,
+    isPaid: false,
+    paidDate: undefined,
+    note: "",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+};
+
+// 지연 일수 계산
+export function calculateDelayDays(dueDate: string, isPaid: boolean, paidDate?: string): number {
+  if (isPaid && paidDate) {
+    const due = new Date(dueDate);
+    const paid = new Date(paidDate);
+    const diff = Math.floor((paid.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff : 0;
+  }
+  
+  if (!isPaid) {
+    const due = new Date(dueDate);
+    const today = new Date();
+    const diff = Math.floor((today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff : 0;
+  }
+  
+  return 0;
+}

@@ -232,3 +232,38 @@ export interface StudentVehicleInfo {
   createdAt: string; // ISO 8601
   updatedAt: string; // ISO 8601
 }
+
+// ─────────────────────────────────────────────
+// 학부모 상담일지 타입 정의
+// ─────────────────────────────────────────────
+
+export interface ConsultRecord {
+  id: string;
+  studentId?: string; // 등록된 학생의 경우 (nullable)
+  studentName: string; // 학생 이름
+  parentName?: string; // 학부모 이름
+  parentPhone?: string; // 학부모 연락처
+  consultDate: string; // YYYY-MM-DD
+  content: string; // 상담 내용
+  isProspective: boolean; // 예비 학생 여부 (true: 미등록, false: 등록 학생)
+  createdAt: string; // ISO 8601
+  updatedAt: string; // ISO 8601
+}
+
+// ─────────────────────────────────────────────
+// 교육비 관리 타입 정의
+// ─────────────────────────────────────────────
+
+export interface TuitionPayment {
+  id: string;
+  studentId: string; // 학생 ID
+  studentName: string; // 학생 이름 (중복 저장)
+  month: string; // YYYY-MM (해당 월)
+  dueDate: string; // YYYY-MM-DD (납부 기한)
+  amount: number; // 금액
+  isPaid: boolean; // 납부 여부
+  paidDate?: string; // YYYY-MM-DD (실제 납부 날짜)
+  note?: string; // 메모
+  createdAt: string; // ISO 8601
+  updatedAt: string; // ISO 8601
+}
