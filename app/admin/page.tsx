@@ -285,7 +285,7 @@ export default function AdminPage() {
       await upsertExam(e);
 
       // ✅ 합격이면 학생의 currentGrade를 자동 업데이트
-      if (e.passed && selectedStudent) {
+      if (e.passed && !e.isDraft && selectedStudent) {
         const updatedStudent = {
           ...selectedStudent,
           currentGrade: e.targetGrade, // 승급한 급수를 현재 급수로
@@ -299,6 +299,11 @@ export default function AdminPage() {
         setStudents(
           students.map((s) => (s.id === updatedStudent.id ? updatedStudent : s)),
         );
+      }
+
+      // UI 강제 업데이트 (임시저장/최종저장 반영)
+      if (selectedStudent) {
+        setSelectedStudent({ ...selectedStudent });
       }
     } catch (error) {
       console.error("❌ Save exam error:", error);
@@ -765,7 +770,7 @@ function StudentDetail({
             {draftExams.length > 0 && (
               <button
                 onClick={() => setShowDraftModal(true)}
-                className="text-xs px-3 py-1.5 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border border-yellow-300 font-semibold inline-flex items-center gap-1 transition"
+                className="text-xs px-3 py-1.5 bg-[#FF9D00]/10 hover:bg-[#FF9D00]/20 text-[#FF9D00] border border-[#FF9D00]/30 font-semibold inline-flex items-center gap-1 transition"
               >
                 <Save size={12} /> 임시저장본({draftExams.length})
               </button>
@@ -850,26 +855,43 @@ function StudentDetail({
               {draftExams.map((draft) => (
                 <div
                   key={draft.id}
-                  className="p-4 border border-line hover:border-ink transition cursor-pointer"
-                  onClick={() => {
-                    setShowDraftModal(false);
-                    onEditExam(draft);
-                  }}
+                  className="p-4 border border-line hover:border-ink transition"
                 >
-                  <div className="flex items-center gap-2 mb-1">
-                    <Calendar size={14} className="text-muted" />
-                    <span className="text-sm font-medium text-ink">
-                      {draft.examDate.slice(0, 7).replace("-", "년 ") + "월"}
-                    </span>
-                    <span className="text-[10px] px-1.5 py-0.5 bg-yellow-100 text-yellow-700 border border-yellow-300">
-                      임시저장
-                    </span>
-                  </div>
-                  <div className="text-xs text-muted">
-                    {draft.currentGrade} → {draft.targetGrade}
-                  </div>
-                  <div className="text-xs text-muted mt-1">
-                    클릭하여 수정
+                  <div className="flex items-start justify-between">
+                    <div
+                      className="flex-1 cursor-pointer"
+                      onClick={() => {
+                        setShowDraftModal(false);
+                        onEditExam(draft);
+                      }}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <Calendar size={14} className="text-muted" />
+                        <span className="text-sm font-medium text-ink">
+                          {draft.examDate.slice(0, 7).replace("-", "년 ") + "월"}
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.5 bg-[#FF9D00]/10 text-[#FF9D00] border border-[#FF9D00]/30">
+                          임시저장
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted">
+                        {draft.currentGrade} → {draft.targetGrade}
+                      </div>
+                      <div className="text-xs text-muted mt-1">
+                        클릭하여 수정
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm("이 임시저장본을 삭제하시겠습니까?")) {
+                          onDeleteExam(draft.id);
+                        }
+                      }}
+                      className="text-xs px-2 py-1 border border-line text-muted hover:border-point hover:text-point transition shrink-0"
+                    >
+                      <Trash2 size={11} />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -1173,7 +1195,7 @@ function ExamEditModal({
             <h3 className="text-lg font-semibold text-ink">
               심사 정보 입력
               {exam.isDraft && (
-                <span className="ml-2 text-xs px-2 py-1 bg-yellow-100 text-yellow-700 border border-yellow-300">
+                <span className="ml-2 text-xs px-2 py-1 bg-[#FF9D00]/10 text-[#FF9D00] border border-[#FF9D00]/30">
                   임시저장본
                 </span>
               )}
@@ -1353,7 +1375,7 @@ function ExamEditModal({
               type="button"
               onClick={saveDraft}
               disabled={saving}
-              className="px-4 py-2.5 border border-line text-ink-soft hover:border-ink hover:text-ink inline-flex items-center justify-center gap-2 disabled:opacity-50"
+              className="px-4 py-2.5 border border-[#FF9D00]/30 bg-[#FF9D00]/10 text-[#FF9D00] hover:bg-[#FF9D00]/20 hover:border-[#FF9D00]/50 inline-flex items-center justify-center gap-2 disabled:opacity-50 transition"
             >
               <Save size={16} /> {saving ? "저장 중..." : "임시저장"}
             </button>
