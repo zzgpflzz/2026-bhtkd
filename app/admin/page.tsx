@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import AdminSidebar from "../../components/AdminSidebar";
 import VehicleManagement from "../../components/VehicleManagement";
-import AttendanceManagement from "../../components/AttendanceManagement";
+import AttendanceWithTabs from "../../components/AttendanceWithTabs";
 import ParentContact from "../../components/ParentContact";
 import ConsultManagement from "../../components/ConsultManagement";
 import TuitionManagement from "../../components/TuitionManagement";
@@ -613,7 +613,7 @@ export default function AdminPage() {
         )}
 
         {activeTab === "attendance" && (
-          <AttendanceManagement />
+          <AttendanceWithTabs />
         )}
 
         {activeTab === "contacts" && (
