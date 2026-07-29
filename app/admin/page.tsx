@@ -412,8 +412,8 @@ export default function AdminPage() {
       />
 
       {/* 메인 컨텐츠 */}
-      <div className="flex-1 overflow-auto">
-        <div className="px-6 lg:px-10 py-8 sm:py-10">
+      <div className="flex-1 overflow-auto pt-16 lg:pt-0">
+        <div className="px-4 lg:px-10 py-6 sm:py-10">
         {activeTab === "students" && (
           <>
         {dataLoading ? (
