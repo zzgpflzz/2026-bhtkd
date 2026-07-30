@@ -258,20 +258,35 @@ export default function AdminPage() {
         selectedForCertificate.has(s.id),
       );
 
-      const certificatesData: CertificateData[] = await Promise.all(
-        selectedStudents.map(async (student) => {
-          const currentGrade = await getStudentCurrentGrade(student.id);
-          const targetGrade = getNextGrade(currentGrade);
+      const certificatesData: CertificateData[] = selectedStudents.map((student) => {
+        // 프론트에 표시된 currentGrade를 그대로 사용 (임시저장 제외)
+        const currentGrade = student.currentGrade || "9급";
+        const targetGrade = getNextGrade(currentGrade);
 
-          return {
-            name: student.name,
-            currentGrade,
-            targetGrade,
-            date: formatToday(),
-            content: `태권도 ${targetGrade} 승급 인증`,
-          };
-        }),
-      );
+        // 유효하지 않은 급수 확인 (GRADES 배열에 없으면 오류)
+        const validGrades = [
+          "9급", "8급", "7급", "6급", "5급", "4급", "3급", "2급", "1급",
+          "1품 0급", "1품 2급", "1품 4급", "1품 6급", "1품 8급", "1품 10급", "1품 12급",
+          "2품 0급", "2품 2급", "2품 4급", "2품 6급", "2품 8급", "2품 10급", "2품 12급",
+          "2품 14급", "2품 16급", "2품 18급", "2품 20급", "2품 22급", "2품 24급",
+          "3품 0급", "3품 2급", "3품 4급", "3품 6급", "3품 8급", "3품 10급", "3품 12급",
+          "3품 14급", "3품 16급", "3품 18급", "3품 20급", "3품 22급", "3품 24급",
+          "3품 26급", "3품 28급", "3품 30급", "3품 32급", "3품 34급", "3품 36급",
+        ];
+
+        if (!validGrades.includes(currentGrade as any) || !validGrades.includes(targetGrade as any)) {
+          console.error(`❌ 잘못된 급수: ${student.name} - 현재: ${currentGrade}, 목표: ${targetGrade}`);
+          throw new Error(`${student.name}의 급수 정보가 올바르지 않습니다. (현재: ${currentGrade}, 목표: ${targetGrade})`);
+        }
+
+        return {
+          name: student.name,
+          currentGrade,
+          targetGrade,
+          date: formatToday(),
+          content: `태권도 ${targetGrade} 승급 인증`,
+        };
+      });
 
       // 순차 다운로드
       await downloadMultipleCertificates(certificatesData);

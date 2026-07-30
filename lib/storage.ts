@@ -685,7 +685,7 @@ export const newAttendanceStudentTemplate = (id?: string): AttendanceStudent => 
 // 상장 생성용 헬퍼
 // ─────────────────────────────────────────────
 
-// 학생의 현재 급수 조회
+// 학생의 현재 급수 조회 (임시저장 제외)
 export async function getStudentCurrentGrade(
   studentId: string,
 ): Promise<CurrentGrade> {
@@ -695,8 +695,8 @@ export async function getStudentCurrentGrade(
     return student.currentGrade;
   }
 
-  // 2. 없으면 가장 최근 합격 심사의 targetGrade 사용
-  const exams = await getStudentExams(studentId);
+  // 2. 없으면 가장 최근 **최종 저장된** 합격 심사의 targetGrade 사용
+  const exams = await getFinalExams(studentId); // 임시저장 제외
   const passedExams = exams.filter((e) => e.passed);
 
   if (passedExams.length > 0) {
