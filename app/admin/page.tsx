@@ -104,6 +104,7 @@ export default function AdminPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState("");
   const [gradeFilter, setGradeFilter] = useState<GradeFilterType>("전체");
+  const [sortBy, setSortBy] = useState<"name" | "age">("age");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
@@ -164,10 +165,16 @@ export default function AdminPage() {
       return nameMatch && gradeMatch;
     })
     .sort((a, b) => {
-      const ga = getSchoolGrade(a.birthDate).order;
-      const gb = getSchoolGrade(b.birthDate).order;
-      if (ga !== gb) return ga - gb;
-      return a.birthDate.localeCompare(b.birthDate);
+      if (sortBy === "name") {
+        // 이름순 (가나다순)
+        return a.name.localeCompare(b.name, 'ko-KR');
+      } else {
+        // 나이순 (학년순) - 기본값
+        const ga = getSchoolGrade(a.birthDate).order;
+        const gb = getSchoolGrade(b.birthDate).order;
+        if (ga !== gb) return ga - gb;
+        return a.birthDate.localeCompare(b.birthDate);
+      }
     });
 
   const handleSaveStudent = async (s: Student) => {
@@ -490,6 +497,21 @@ export default function AdminPage() {
                     {opt}
                   </button>
                 ))}
+              </div>
+              {/* 정렬 필터 */}
+              <div className="flex gap-1 mb-2">
+                <button
+                  onClick={() => setSortBy("age")}
+                  className={`text-[11px] px-3 py-1 border transition ${sortBy === "age" ? "bg-point text-white border-point" : "border-line text-muted hover:border-point hover:text-point"}`}
+                >
+                  나이순
+                </button>
+                <button
+                  onClick={() => setSortBy("name")}
+                  className={`text-[11px] px-3 py-1 border transition ${sortBy === "name" ? "bg-point text-white border-point" : "border-line text-muted hover:border-point hover:text-point"}`}
+                >
+                  이름순
+                </button>
               </div>
               <div className="border border-line mb-4">
                 <div className="flex items-center gap-2 px-4 py-3 border-b border-line">
