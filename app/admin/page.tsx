@@ -109,6 +109,7 @@ export default function AdminPage() {
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
   const [selectedForCertificate, setSelectedForCertificate] = useState<Set<string>>(new Set());
   const [generatingCertificates, setGeneratingCertificates] = useState(false);
+  const [showManualCertificateModal, setShowManualCertificateModal] = useState(false);
 
   useEffect(() => {
     const savedAuth = sessionStorage.getItem("baekho-admin-auth");
@@ -260,7 +261,10 @@ export default function AdminPage() {
 
       const certificatesData: CertificateData[] = selectedStudents.map((student) => {
         // 프론트에 표시된 currentGrade를 그대로 사용 (임시저장 제외)
-        const currentGrade = student.currentGrade || "9급";
+        if (!student.currentGrade) {
+          throw new Error(`${student.name}의 현재 급수 정보가 없습니다. 최종 저장된 합격 심사가 있는지 확인하거나 '상장 직접 입력'을 사용하세요.`);
+        }
+        const currentGrade = student.currentGrade;
         const targetGrade = getNextGrade(currentGrade);
 
         // 유효하지 않은 급수 확인 (GRADES 배열에 없으면 오류)
@@ -589,6 +593,15 @@ export default function AdminPage() {
                 </button>
               )}
 
+              {/* 직접 입력 상장 생성 버튼 */}
+              <button
+                onClick={() => setShowManualCertificateModal(true)}
+                className="w-full border-2 border-point text-point hover:bg-point hover:text-white font-semibold py-3 inline-flex items-center justify-center gap-2 transition mb-2"
+              >
+                <Award size={16} />
+                상장 직접 입력
+              </button>
+
               <button
                 onClick={() => setEditingStudent(newStudentTemplate())}
                 className="w-full bg-ink hover:bg-ink/85 text-paper font-semibold py-3 inline-flex items-center justify-center gap-2 transition"
@@ -658,6 +671,13 @@ export default function AdminPage() {
             onClose={() => setEditingExam(null)}
             onSave={handleSaveExam}
             onDelete={() => handleDeleteExam(editingExam.id)}
+          />
+        )}
+
+        {/* 직접 입력 상장 생성 모달 */}
+        {showManualCertificateModal && (
+          <ManualCertificateModal
+            onClose={() => setShowManualCertificateModal(false)}
           />
         )}
       </div>
@@ -1522,5 +1542,116 @@ function Field({
       <span className="block text-xs text-ink-soft mb-1.5">{label}</span>
       {children}
     </label>
+  );
+}
+
+// ─────────────────────────────────────────────
+// 직접 입력 상장 생성 모달
+// ─────────────────────────────────────────────
+function ManualCertificateModal({ onClose }: { onClose: () => void }) {
+  const [name, setName] = useState("");
+  const [currentGrade, setCurrentGrade] = useState<Grade>("9급");
+  const [generating, setGenerating] = useState(false);
+
+  const handleGenerate = async () => {
+    if (!name.trim()) {
+      alert("이름을 입력해주세요.");
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      const targetGrade = getNextGrade(currentGrade);
+
+      const certificateData: CertificateData = {
+        name: name.trim(),
+        currentGrade,
+        targetGrade,
+        date: formatToday(),
+        content: `태권도 ${targetGrade} 승급 인증`,
+      };
+
+      await downloadMultipleCertificates([certificateData]);
+      alert("상장이 다운로드되었습니다.");
+      onClose();
+    } catch (error) {
+      console.error("❌ Certificate generation error:", error);
+      alert("상장 생성에 실패했습니다: " + String(error));
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-ink/40 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-paper border border-line max-w-md w-full p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Award size={20} className="text-point" />
+            <h3 className="text-lg font-semibold text-ink">상장 직접 입력</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 hover:bg-line-soft transition"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-ink mb-2">
+              이름
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="홍길동"
+              className="form-input w-full"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-ink mb-2">
+              현재 급수
+            </label>
+            <GradeSelector
+              label=""
+              value={currentGrade}
+              onChange={(v) => setCurrentGrade(v)}
+            />
+            <p className="text-xs text-muted mt-2">
+              다음 급수: <span className="font-semibold text-ink">{getNextGrade(currentGrade)}</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={onClose}
+            disabled={generating}
+            className="flex-1 px-4 py-2.5 border border-line text-ink-soft hover:border-ink hover:text-ink disabled:opacity-50 transition"
+          >
+            취소
+          </button>
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="flex-1 px-4 py-2.5 bg-point hover:bg-point-dark text-white font-semibold inline-flex items-center justify-center gap-2 transition disabled:opacity-50"
+          >
+            <Award size={16} />
+            {generating ? "생성 중..." : "상장 생성"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
