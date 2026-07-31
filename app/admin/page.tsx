@@ -266,12 +266,32 @@ export default function AdminPage() {
         selectedForCertificate.has(s.id),
       );
 
-      const certificatesData: CertificateData[] = selectedStudents.map((student) => {
+      console.log("🎓 선택된 학생들:", selectedStudents.map(s => ({
+        name: s.name,
+        currentGrade: s.currentGrade,
+        hasCurrentGrade: !!s.currentGrade
+      })));
+
+      const certificatesData: CertificateData[] = [];
+
+      for (const student of selectedStudents) {
         // 프론트에 표시된 currentGrade를 그대로 사용 (임시저장 제외)
-        if (!student.currentGrade) {
-          throw new Error(`${student.name}의 현재 급수 정보가 없습니다. 최종 저장된 합격 심사가 있는지 확인하거나 '상장 직접 입력'을 사용하세요.`);
+        console.log(`📝 ${student.name} - currentGrade:`, student.currentGrade, typeof student.currentGrade);
+
+        let currentGrade = student.currentGrade;
+
+        // currentGrade가 없으면 실시간으로 계산
+        if (!currentGrade) {
+          console.warn(`⚠️ ${student.name}의 currentGrade가 없음, 실시간 계산 시도`);
+          try {
+            currentGrade = await getStudentCurrentGrade(student.id);
+            console.log(`✅ ${student.name}의 급수 계산 완료:`, currentGrade);
+          } catch (error) {
+            console.error(`❌ ${student.name}의 급수 계산 실패:`, error);
+            throw new Error(`${student.name}의 현재 급수 정보가 없습니다. 최종 저장된 합격 심사가 있는지 확인하거나 '상장 직접 입력'을 사용하세요.`);
+          }
         }
-        const currentGrade = student.currentGrade;
+
         const targetGrade = getNextGrade(currentGrade);
 
         // 유효하지 않은 급수 확인 (GRADES 배열에 없으면 오류)
@@ -290,14 +310,16 @@ export default function AdminPage() {
           throw new Error(`${student.name}의 급수 정보가 올바르지 않습니다. (현재: ${currentGrade}, 목표: ${targetGrade})`);
         }
 
-        return {
+        certificatesData.push({
           name: student.name,
           currentGrade,
           targetGrade,
           date: formatToday(),
           content: `태권도 ${targetGrade} 승급 인증`,
-        };
-      });
+        });
+      }
+
+      console.log("✅ 상장 데이터 생성 완료:", certificatesData);
 
       // 순차 다운로드
       await downloadMultipleCertificates(certificatesData);
