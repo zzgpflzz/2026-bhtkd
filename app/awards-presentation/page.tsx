@@ -15,6 +15,43 @@ function PresentationContent() {
   const [selectedAward, setSelectedAward] = useState<Award | null>(null);
   const [stage, setStage] = useState<"main" | "drumroll" | "reveal">("main");
 
+  // Web Audio API로 드럼롤 효과음 생성
+  const playDrumroll = () => {
+    if (typeof window === "undefined") return null;
+
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const duration = 3; // 3초
+    const tempo = 8; // 초당 드럼 소리 횟수
+
+    let currentTime = audioContext.currentTime;
+    const interval = 1 / tempo;
+    const acceleration = 1.5; // 점점 빨라지는 효과
+
+    for (let i = 0; i < duration * tempo; i++) {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      // 드럼 소리 (낮은 주파수)
+      oscillator.frequency.value = 100 + Math.random() * 50;
+      oscillator.type = "triangle";
+
+      // 볼륨 엔벨로프 (짧은 타격음)
+      gainNode.gain.setValueAtTime(0.3, currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + 0.1);
+
+      oscillator.start(currentTime);
+      oscillator.stop(currentTime + 0.1);
+
+      // 점점 빨라지는 효과
+      currentTime += interval / (1 + (i / (duration * tempo)) * acceleration);
+    }
+
+    return audioContext;
+  };
+
   useEffect(() => {
     // localStorage에서 데이터 가져오기
     try {
@@ -106,8 +143,20 @@ function PresentationContent() {
     if (selectedAward) {
       // Stage transitions
       setStage("drumroll");
-      const timer = setTimeout(() => setStage("reveal"), 3000);
-      return () => clearTimeout(timer);
+
+      // Play drumroll sound effect
+      const audioContext = playDrumroll();
+
+      const timer = setTimeout(() => {
+        setStage("reveal");
+      }, 3000);
+
+      return () => {
+        clearTimeout(timer);
+        if (audioContext) {
+          audioContext.close();
+        }
+      };
     }
   }, [selectedAward]);
 
