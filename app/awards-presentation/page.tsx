@@ -33,16 +33,21 @@ function PresentationContent() {
     if (!bgmUrl) return;
 
     const videoId = extractYouTubeId(bgmUrl);
-    if (!videoId) return;
+    if (!videoId) {
+      console.error("Invalid YouTube URL:", bgmUrl);
+      return;
+    }
 
-    // Load YouTube API
-    const tag = document.createElement("script");
-    tag.src = "https://www.youtube.com/iframe_api";
-    const firstScriptTag = document.getElementsByTagName("script")[0];
-    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+    console.log("Loading YouTube player with video ID:", videoId);
 
-    // Initialize player when API is ready
-    (window as any).onYouTubeIframeAPIReady = () => {
+    // Initialize player function
+    const initPlayer = () => {
+      if (!(window as any).YT || !(window as any).YT.Player) {
+        console.error("YouTube API not loaded yet");
+        return;
+      }
+
+      console.log("Creating YouTube player...");
       new (window as any).YT.Player("youtube-player", {
         videoId: videoId,
         playerVars: {
@@ -51,14 +56,40 @@ function PresentationContent() {
           disablekb: 1,
           fs: 0,
           modestbranding: 1,
+          loop: 1,
+          playlist: videoId, // Required for loop
         },
         events: {
           onReady: (event: any) => {
+            console.log("YouTube player ready, playing...");
             event.target.playVideo();
+            event.target.setVolume(30); // Set volume to 30%
+          },
+          onStateChange: (event: any) => {
+            console.log("Player state:", event.data);
+          },
+          onError: (event: any) => {
+            console.error("YouTube player error:", event.data);
           },
         },
       });
     };
+
+    // Check if API is already loaded
+    if ((window as any).YT && (window as any).YT.Player) {
+      initPlayer();
+    } else {
+      // Set callback before loading script
+      (window as any).onYouTubeIframeAPIReady = initPlayer;
+
+      // Check if script is already loading
+      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+        const tag = document.createElement("script");
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName("script")[0];
+        firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+      }
+    }
   }, [bgmUrl]);
 
   useEffect(() => {
@@ -87,11 +118,9 @@ function PresentationContent() {
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-pink-900 flex items-center justify-center overflow-hidden">
       {/* YouTube player (hidden) */}
-      {bgmUrl && (
-        <div className="hidden">
-          <div id="youtube-player"></div>
-        </div>
-      )}
+      <div className="absolute -left-[9999px] w-0 h-0 overflow-hidden">
+        <div id="youtube-player"></div>
+      </div>
 
       {/* Floating background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
