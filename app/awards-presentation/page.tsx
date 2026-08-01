@@ -14,43 +14,14 @@ function PresentationContent() {
   const [bgmUrl, setBgmUrl] = useState("");
   const [selectedAward, setSelectedAward] = useState<Award | null>(null);
   const [stage, setStage] = useState<"main" | "drumroll" | "reveal">("main");
-
-  // Web Audio API로 드럼롤 효과음 생성
-  const playDrumroll = () => {
-    if (typeof window === "undefined") return null;
-
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const duration = 3; // 3초
-    const tempo = 8; // 초당 드럼 소리 횟수
-
-    let currentTime = audioContext.currentTime;
-    const interval = 1 / tempo;
-    const acceleration = 1.5; // 점점 빨라지는 효과
-
-    for (let i = 0; i < duration * tempo; i++) {
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      // 드럼 소리 (낮은 주파수)
-      oscillator.frequency.value = 100 + Math.random() * 50;
-      oscillator.type = "triangle";
-
-      // 볼륨 엔벨로프 (짧은 타격음)
-      gainNode.gain.setValueAtTime(0.3, currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + 0.1);
-
-      oscillator.start(currentTime);
-      oscillator.stop(currentTime + 0.1);
-
-      // 점점 빨라지는 효과
-      currentTime += interval / (1 + (i / (duration * tempo)) * acceleration);
+  const [drumrollAudio] = useState(() => {
+    if (typeof window !== "undefined") {
+      const audio = new Audio("/drumroll.mp3");
+      audio.volume = 0.6;
+      return audio;
     }
-
-    return audioContext;
-  };
+    return null;
+  });
 
   useEffect(() => {
     // localStorage에서 데이터 가져오기
@@ -145,20 +116,30 @@ function PresentationContent() {
       setStage("drumroll");
 
       // Play drumroll sound effect
-      const audioContext = playDrumroll();
+      if (drumrollAudio) {
+        drumrollAudio.currentTime = 0;
+        drumrollAudio.play().catch((error) => {
+          console.error("Failed to play drumroll:", error);
+        });
+      }
 
       const timer = setTimeout(() => {
         setStage("reveal");
+        // Fade out or stop drumroll
+        if (drumrollAudio) {
+          drumrollAudio.pause();
+        }
       }, 3000);
 
       return () => {
         clearTimeout(timer);
-        if (audioContext) {
-          audioContext.close();
+        if (drumrollAudio) {
+          drumrollAudio.pause();
+          drumrollAudio.currentTime = 0;
         }
       };
     }
-  }, [selectedAward]);
+  }, [selectedAward, drumrollAudio]);
 
   function extractYouTubeId(url: string): string | null {
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
