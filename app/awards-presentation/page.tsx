@@ -58,6 +58,7 @@ function PresentationContent() {
           modestbranding: 1,
           loop: 1,
           playlist: videoId, // Required for loop
+          origin: window.location.origin,
         },
         events: {
           onReady: (event: any) => {
@@ -70,6 +71,9 @@ function PresentationContent() {
           },
           onError: (event: any) => {
             console.error("YouTube player error:", event.data);
+            if (event.data === 150 || event.data === 101) {
+              alert("이 YouTube 비디오는 외부 사이트에서 재생할 수 없습니다.\n다른 비디오를 선택하거나, '공유 허용' 설정이 된 비디오를 사용해주세요.");
+            }
           },
         },
       });

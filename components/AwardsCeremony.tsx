@@ -99,6 +99,10 @@ export default function AwardsCeremony() {
         <p className="text-xs text-muted mt-1">
           YouTube 동영상 URL을 입력하면 프레젠테이션에서 배경음악으로 재생됩니다.
         </p>
+        <p className="text-xs text-orange-600 mt-1">
+          ⚠️ 일부 YouTube 비디오는 저작권 제한으로 외부 사이트에서 재생되지 않을 수 있습니다.
+          재생되지 않을 경우 다른 비디오를 선택해주세요.
+        </p>
       </div>
 
       {/* 상 추가 및 시상식 페이지 버튼 */}
