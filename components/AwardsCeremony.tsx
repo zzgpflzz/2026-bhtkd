@@ -68,8 +68,9 @@ export default function AwardsCeremony() {
     }
   }
 
-  function handlePlayPresentation(award: Award) {
-    const presentationUrl = `/awards-presentation?id=${award.id}&name=${encodeURIComponent(award.name)}&student=${encodeURIComponent(award.studentName)}&bgm=${encodeURIComponent(bgmUrl)}`;
+  function handleOpenCeremonyPage() {
+    const awardsData = encodeURIComponent(JSON.stringify(awards));
+    const presentationUrl = `/awards-presentation?awards=${awardsData}&bgm=${encodeURIComponent(bgmUrl)}`;
     window.open(presentationUrl, "_blank", "fullscreen=yes,width=1920,height=1080");
   }
 
@@ -100,58 +101,76 @@ export default function AwardsCeremony() {
         </p>
       </div>
 
-      {/* 상 추가 버튼 */}
-      <button
-        onClick={() => setShowAddModal(true)}
-        className="mb-6 flex items-center gap-2 px-4 py-2 bg-point hover:bg-point-dark text-white transition"
-      >
-        <Plus size={18} />
-        상 추가하기
-      </button>
+      {/* 상 추가 및 시상식 페이지 버튼 */}
+      <div className="mb-6 flex gap-3">
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-point hover:bg-point-dark text-white transition"
+        >
+          <Plus size={18} />
+          상 추가하기
+        </button>
+        {awards.length > 0 && (
+          <button
+            onClick={handleOpenCeremonyPage}
+            className="flex items-center gap-2 px-4 py-2 bg-ink hover:bg-ink-soft text-white transition"
+          >
+            <Play size={18} />
+            시상식 페이지 확인
+          </button>
+        )}
+      </div>
 
-      {/* 상 카드 그리드 */}
+      {/* 상 리스트 테이블 */}
       {awards.length === 0 ? (
         <div className="border border-line p-12 text-center text-muted">
           등록된 상이 없습니다. 상 추가하기 버튼을 눌러 시작하세요.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {awards.map((award, index) => {
-            const rotation = (index % 3 === 0 ? -2 : index % 3 === 1 ? 1 : -1);
-            return (
-              <div
-                key={award.id}
-                className={`${award.color} border-2 rounded-2xl p-6 shadow-lg transition transform hover:scale-105 hover:shadow-xl`}
-                style={{ transform: `rotate(${rotation}deg)` }}
-              >
-                <div className="mb-4">
-                  <h3 className="text-xl font-bold text-ink mb-2">{award.name}</h3>
-                  <p className="text-2xl font-black text-ink-soft">{award.studentName}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handlePlayPresentation(award)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-ink hover:bg-ink-soft text-white transition"
-                  >
-                    <Play size={16} />
-                    발표
-                  </button>
-                  <button
-                    onClick={() => setEditingAward(award)}
-                    className="p-2 border border-ink hover:bg-ink hover:text-white transition"
-                  >
-                    <Edit2 size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteAward(award.id)}
-                    className="p-2 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+        <div className="border border-line">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-line">
+              <tr>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-ink">
+                  상 이름
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-ink">
+                  수상자
+                </th>
+                <th className="px-4 py-3 text-right text-sm font-semibold text-ink">
+                  관리
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {awards.map((award) => (
+                <tr key={award.id} className="border-b border-line last:border-b-0 hover:bg-gray-50">
+                  <td className="px-4 py-3 text-sm text-ink">
+                    {award.name}
+                  </td>
+                  <td className="px-4 py-3 text-sm font-semibold text-ink">
+                    {award.studentName}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => setEditingAward(award)}
+                        className="p-2 text-ink-soft hover:text-ink hover:bg-line-soft transition"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAward(award.id)}
+                        className="p-2 text-red-500 hover:bg-red-50 transition"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 

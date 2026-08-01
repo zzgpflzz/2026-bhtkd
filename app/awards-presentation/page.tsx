@@ -3,24 +3,30 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
+interface Award {
+  id: string;
+  name: string;
+  studentName: string;
+  color: string;
+}
+
 function PresentationContent() {
   const searchParams = useSearchParams();
-  const awardName = searchParams.get("name") || "";
-  const studentName = searchParams.get("student") || "";
+  const awardsParam = searchParams.get("awards") || "[]";
   const bgmUrl = searchParams.get("bgm") || "";
 
-  const [stage, setStage] = useState<"award" | "drumroll" | "reveal">("award");
+  const [awards, setAwards] = useState<Award[]>([]);
+  const [selectedAward, setSelectedAward] = useState<Award | null>(null);
+  const [stage, setStage] = useState<"main" | "drumroll" | "reveal">("main");
 
   useEffect(() => {
-    // Stage transitions
-    const timer1 = setTimeout(() => setStage("drumroll"), 2000);
-    const timer2 = setTimeout(() => setStage("reveal"), 5000);
-
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-    };
-  }, []);
+    try {
+      const parsed = JSON.parse(decodeURIComponent(awardsParam));
+      setAwards(parsed);
+    } catch (error) {
+      console.error("Failed to parse awards:", error);
+    }
+  }, [awardsParam]);
 
   useEffect(() => {
     // YouTube IFrame API
@@ -55,9 +61,27 @@ function PresentationContent() {
     };
   }, [bgmUrl]);
 
+  useEffect(() => {
+    if (selectedAward) {
+      // Stage transitions
+      setStage("drumroll");
+      const timer = setTimeout(() => setStage("reveal"), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedAward]);
+
   function extractYouTubeId(url: string): string | null {
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
     return match ? match[1] : null;
+  }
+
+  function handleAwardClick(award: Award) {
+    setSelectedAward(award);
+  }
+
+  function handleBackToMain() {
+    setSelectedAward(null);
+    setStage("main");
   }
 
   return (
@@ -85,23 +109,40 @@ function PresentationContent() {
         ))}
       </div>
 
-      {/* Stage 1: Award name */}
-      {stage === "award" && (
-        <div className="text-center animate-fade-in">
-          <h1 className="text-6xl md:text-8xl font-black text-white mb-4 drop-shadow-2xl animate-scale-in">
-            {awardName}
+      {/* Main: Award cards */}
+      {!selectedAward && stage === "main" && (
+        <div className="relative z-10 w-full max-w-6xl px-8">
+          <h1 className="text-5xl md:text-6xl font-black text-white text-center mb-12 drop-shadow-2xl animate-fade-in">
+            🏆 시상식 🏆
           </h1>
-          <div className="text-2xl md:text-3xl text-white/80 animate-pulse">
-            ✨ ✨ ✨
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {awards.map((award, index) => {
+              const rotation = (index % 3 === 0 ? -2 : index % 3 === 1 ? 1 : -1);
+              return (
+                <button
+                  key={award.id}
+                  onClick={() => handleAwardClick(award)}
+                  className={`${award.color} border-2 rounded-2xl p-8 shadow-2xl transition transform hover:scale-110 hover:shadow-3xl cursor-pointer animate-slide-in`}
+                  style={{
+                    transform: `rotate(${rotation}deg)`,
+                    animationDelay: `${index * 0.1}s`,
+                  }}
+                >
+                  <h3 className="text-2xl md:text-3xl font-bold text-ink text-center">
+                    {award.name}
+                  </h3>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Stage 2: Drumroll */}
-      {stage === "drumroll" && (
+      {/* Presentation: Drumroll */}
+      {selectedAward && stage === "drumroll" && (
         <div className="text-center">
           <h2 className="text-5xl md:text-7xl font-bold text-white mb-8 drop-shadow-2xl animate-bounce-slow">
-            {awardName}
+            {selectedAward.name}
           </h2>
           <div className="text-4xl md:text-6xl font-black text-yellow-300 animate-pulse">
             🥁 두구두구두구... 🥁
@@ -118,21 +159,27 @@ function PresentationContent() {
         </div>
       )}
 
-      {/* Stage 3: Student reveal */}
-      {stage === "reveal" && (
+      {/* Presentation: Student reveal */}
+      {selectedAward && stage === "reveal" && (
         <div className="text-center animate-zoom-in">
           <h2 className="text-4xl md:text-5xl font-bold text-white/90 mb-6 drop-shadow-2xl">
-            {awardName}
+            {selectedAward.name}
           </h2>
           <div className="relative">
             <div className="absolute inset-0 bg-yellow-300 blur-3xl animate-pulse" />
             <h1 className="relative text-8xl md:text-[12rem] font-black text-yellow-300 drop-shadow-2xl animate-bounce-once">
-              {studentName}
+              {selectedAward.studentName}
             </h1>
           </div>
           <div className="mt-8 text-4xl md:text-5xl animate-bounce-slow">
             🎉 🎊 👏 🎊 🎉
           </div>
+          <button
+            onClick={handleBackToMain}
+            className="mt-12 px-8 py-3 bg-white/20 hover:bg-white/30 text-white font-semibold text-lg rounded-lg transition backdrop-blur-sm"
+          >
+            돌아가기
+          </button>
         </div>
       )}
 
@@ -155,15 +202,14 @@ function PresentationContent() {
             transform: scale(1);
           }
         }
-        @keyframes scale-in {
-          0% {
-            transform: scale(0);
+        @keyframes slide-in {
+          from {
+            opacity: 0;
+            transform: translateY(30px) scale(0.8);
           }
-          50% {
-            transform: scale(1.1);
-          }
-          100% {
-            transform: scale(1);
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
           }
         }
         @keyframes zoom-in {
@@ -204,8 +250,8 @@ function PresentationContent() {
         .animate-fade-in {
           animation: fade-in 1s ease-out;
         }
-        .animate-scale-in {
-          animation: scale-in 1s ease-out;
+        .animate-slide-in {
+          animation: slide-in 0.6s ease-out backwards;
         }
         .animate-zoom-in {
           animation: zoom-in 0.8s ease-out;
