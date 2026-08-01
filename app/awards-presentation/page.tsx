@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface Award {
   id: string;
@@ -11,22 +10,29 @@ interface Award {
 }
 
 function PresentationContent() {
-  const searchParams = useSearchParams();
-  const awardsParam = searchParams.get("awards") || "[]";
-  const bgmUrl = searchParams.get("bgm") || "";
-
   const [awards, setAwards] = useState<Award[]>([]);
+  const [bgmUrl, setBgmUrl] = useState("");
   const [selectedAward, setSelectedAward] = useState<Award | null>(null);
   const [stage, setStage] = useState<"main" | "drumroll" | "reveal">("main");
 
   useEffect(() => {
+    // localStorage에서 데이터 가져오기
     try {
-      const parsed = JSON.parse(decodeURIComponent(awardsParam));
-      setAwards(parsed);
+      const ceremonyAwards = localStorage.getItem("ceremonyAwards");
+      const ceremonyBgm = localStorage.getItem("ceremonyBgm");
+
+      if (ceremonyAwards) {
+        const parsed = JSON.parse(ceremonyAwards);
+        setAwards(parsed);
+      }
+
+      if (ceremonyBgm) {
+        setBgmUrl(ceremonyBgm);
+      }
     } catch (error) {
-      console.error("Failed to parse awards:", error);
+      console.error("Failed to load ceremony data:", error);
     }
-  }, [awardsParam]);
+  }, []);
 
   useEffect(() => {
     // YouTube IFrame API
@@ -301,9 +307,5 @@ function PresentationContent() {
 }
 
 export default function AwardsPresentationPage() {
-  return (
-    <Suspense fallback={<div className="fixed inset-0 bg-black flex items-center justify-center text-white">Loading...</div>}>
-      <PresentationContent />
-    </Suspense>
-  );
+  return <PresentationContent />;
 }

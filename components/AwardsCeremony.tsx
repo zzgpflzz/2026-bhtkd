@@ -69,8 +69,10 @@ export default function AwardsCeremony() {
   }
 
   function handleOpenCeremonyPage() {
-    const awardsData = encodeURIComponent(JSON.stringify(awards));
-    const presentationUrl = `/awards-presentation?awards=${awardsData}&bgm=${encodeURIComponent(bgmUrl)}`;
+    // URL에 노출되지 않도록 localStorage를 통해 데이터 전달
+    localStorage.setItem("ceremonyAwards", JSON.stringify(awards));
+    localStorage.setItem("ceremonyBgm", bgmUrl);
+    const presentationUrl = `/awards-presentation`;
     window.open(presentationUrl, "_blank", "fullscreen=yes,width=1920,height=1080");
   }
 
