@@ -21,6 +21,7 @@ import AttendanceWithTabs from "../../components/AttendanceWithTabs";
 import ParentContact from "../../components/ParentContact";
 import ConsultManagement from "../../components/ConsultManagement";
 import TuitionManagement from "../../components/TuitionManagement";
+import AwardsCeremony from "../../components/AwardsCeremony";
 import {
   loadStudents,
   upsertStudent,
@@ -100,7 +101,7 @@ export default function AdminPage() {
   const [pwError, setPwError] = useState("");
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition">("students");
+  const [activeTab, setActiveTab] = useState<"students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition" | "awards">("students");
 
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState("");
@@ -700,6 +701,10 @@ export default function AdminPage() {
 
         {activeTab === "tuition" && (
           <TuitionManagement />
+        )}
+
+        {activeTab === "awards" && (
+          <AwardsCeremony />
         )}
         </div>
 

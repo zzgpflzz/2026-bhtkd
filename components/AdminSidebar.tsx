@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, User, Calendar, Award, Phone, MessageSquare, DollarSign, Menu, X } from "lucide-react";
+import { ArrowLeft, User, Calendar, Award, Phone, MessageSquare, DollarSign, Menu, X, Trophy } from "lucide-react";
 
 interface AdminSidebarProps {
-  activeTab: "students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition";
-  onTabChange: (tab: "students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition") => void;
+  activeTab: "students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition" | "awards";
+  onTabChange: (tab: "students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition" | "awards") => void;
   onLogout?: () => void;
 }
 
@@ -137,6 +137,17 @@ export default function AdminSidebar({ activeTab, onTabChange, onLogout }: Admin
           >
             <DollarSign size={18} strokeWidth={1.5} />
             <span className="text-sm font-medium">교육비 관리</span>
+          </button>
+          <button
+            onClick={() => handleTabChange("awards")}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded transition ${
+              activeTab === "awards"
+                ? "bg-ink text-paper"
+                : "text-ink-soft hover:bg-line-soft hover:text-ink"
+            }`}
+          >
+            <Trophy size={18} strokeWidth={1.5} />
+            <span className="text-sm font-medium">시상식</span>
           </button>
         </div>
       </nav>
