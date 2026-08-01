@@ -311,6 +311,38 @@ export const newExamTemplate = (studentId: string): Exam => ({
   passed: false,
 });
 
+// 이전 심사 기반 자동 급수 세팅 템플릿
+export const newExamTemplateWithPrevious = async (
+  studentId: string,
+): Promise<Exam> => {
+  // 1. 최근 합격 심사 조회 (최종 저장본만)
+  const exams = await getFinalExams(studentId);
+  const lastPassedExam = exams.find((e) => e.passed);
+
+  if (lastPassedExam) {
+    // 2. 마지막 합격한 심사의 targetGrade를 현재 급수로
+    const currentGrade = lastPassedExam.targetGrade;
+    const { getNextGrade } = await import("./gradeSystem");
+    const targetGrade = getNextGrade(currentGrade);
+
+    return {
+      id: `exam-${Date.now()}`,
+      studentId,
+      examDate: new Date().toISOString().split("T")[0],
+      currentGrade,
+      targetGrade,
+      basicSkills: { basics: 0, poomsae: 0, sparring: 0, breaking: 0 },
+      attitude: { concentration: 0, challenge: 0, greeting: 0, confidence: 0 },
+      lifeHabits: { uniform: 0, language: 0, organization: 0, rules: 0 },
+      comment: "",
+      passed: false,
+    };
+  }
+
+  // 3. 심사 이력 없으면 기본값
+  return newExamTemplate(studentId);
+};
+
 // ─────────────────────────────────────────────
 // 사진 업로드용 헬퍼 — 클라이언트에서 호출
 // dataURL을 받아 캔버스로 800x800 이내로 리사이즈 + jpeg 압축

@@ -29,6 +29,7 @@ import {
   deleteExam,
   newStudentTemplate,
   newExamTemplate,
+  newExamTemplateWithPrevious,
   getStudentExams,
   getDraftExams,
   compressImageDataURL,
@@ -663,9 +664,10 @@ export default function AdminPage() {
                     setEditingStudent({ ...selectedStudent })
                   }
                   onDeleteStudent={handleDeleteStudent}
-                  onAddExam={() =>
-                    setEditingExam(newExamTemplate(selectedStudent.id))
-                  }
+                  onAddExam={async () => {
+                    const template = await newExamTemplateWithPrevious(selectedStudent.id);
+                    setEditingExam(template);
+                  }}
                   onEditExam={(exam) => setEditingExam({ ...exam })}
                   onDeleteExam={handleDeleteExam}
                 />
@@ -709,9 +711,10 @@ export default function AdminPage() {
           />
         )}
 
-        {editingExam && (
+        {editingExam && selectedStudent && (
           <ExamEditModal
             exam={editingExam}
+            studentId={selectedStudent.id}
             onClose={() => setEditingExam(null)}
             onSave={handleSaveExam}
             onDelete={() => handleDeleteExam(editingExam.id)}
@@ -1225,17 +1228,34 @@ function StudentEditModal({
 // ─────────────────────────────────────────────
 function ExamEditModal({
   exam,
+  studentId,
   onClose,
   onSave,
   onDelete,
 }: {
   exam: Exam;
+  studentId: string;
   onClose: () => void;
   onSave: (e: Exam) => Promise<void>;
   onDelete: () => Promise<void>;
 }) {
   const [form, setForm] = useState<Exam>(exam);
   const [saving, setSaving] = useState(false);
+  const [previousExam, setPreviousExam] = useState<Exam | null>(null);
+  const [showPrevious, setShowPrevious] = useState(false);
+
+  // 이전 심사 조회
+  useEffect(() => {
+    (async () => {
+      const exams = await getDraftExams(studentId);
+      const finalExams = await getStudentExams(studentId);
+      const allExams = [...finalExams].filter((e) => !e.isDraft && e.passed);
+
+      if (allExams.length > 0) {
+        setPreviousExam(allExams[0]); // 가장 최근 합격 심사
+      }
+    })();
+  }, [studentId]);
 
   const update = <K extends keyof Exam>(key: K, value: Exam[K]) =>
     setForm((p) => ({ ...p, [key]: value }));
@@ -1302,6 +1322,107 @@ function ExamEditModal({
             </button>
           </div>
         </div>
+
+        {/* 이전 심사 비교 */}
+        {previousExam && (
+          <div className="mb-6 border border-blue-200 bg-blue-50/30">
+            <button
+              type="button"
+              onClick={() => setShowPrevious(!showPrevious)}
+              className="w-full px-4 py-3 flex items-center justify-between text-sm font-medium text-ink hover:bg-blue-50/50 transition"
+            >
+              <span className="flex items-center gap-2">
+                {showPrevious ? "▼" : "▶"} 이전 심사 보기 ({previousExam.examDate})
+              </span>
+              <span className="text-xs text-muted">
+                {previousExam.currentGrade} → {previousExam.targetGrade} / {previousExam.passed ? "합격" : "재심사"}
+              </span>
+            </button>
+
+            {showPrevious && (
+              <div className="px-4 pb-4 pt-2 space-y-3">
+                {/* 기본 수련 영역 */}
+                <div>
+                  <div className="text-xs text-muted mb-2">기본 수련 영역</div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span>기본기</span>
+                      <span className="text-yellow-600">{"⭐".repeat(previousExam.basicSkills.basics)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>품새</span>
+                      <span className="text-yellow-600">{"⭐".repeat(previousExam.basicSkills.poomsae)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>겨루기</span>
+                      <span className="text-yellow-600">{"⭐".repeat(previousExam.basicSkills.sparring)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>기술발차기</span>
+                      <span className="text-yellow-600">{"⭐".repeat(previousExam.basicSkills.breaking)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 태도 */}
+                <div>
+                  <div className="text-xs text-muted mb-2">태도</div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span>집중력</span>
+                      <span className="text-yellow-600">{"⭐".repeat(previousExam.attitude.concentration)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>도전정신</span>
+                      <span className="text-yellow-600">{"⭐".repeat(previousExam.attitude.challenge)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>인사성</span>
+                      <span className="text-yellow-600">{"⭐".repeat(previousExam.attitude.greeting)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>자신감</span>
+                      <span className="text-yellow-600">{"⭐".repeat(previousExam.attitude.confidence)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 생활습관 */}
+                <div>
+                  <div className="text-xs text-muted mb-2">생활습관</div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span>복장상태</span>
+                      <span className="text-yellow-600">{"⭐".repeat(previousExam.lifeHabits.uniform)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>바른 언어</span>
+                      <span className="text-yellow-600">{"⭐".repeat(previousExam.lifeHabits.language)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>정리정돈</span>
+                      <span className="text-yellow-600">{"⭐".repeat(previousExam.lifeHabits.organization)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>규칙준수</span>
+                      <span className="text-yellow-600">{"⭐".repeat(previousExam.lifeHabits.rules)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 코멘트 */}
+                {previousExam.comment && (
+                  <div>
+                    <div className="text-xs text-muted mb-1">관장님 코멘트</div>
+                    <div className="text-xs bg-white p-2 border border-blue-200">
+                      {previousExam.comment}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <Section title="기본 정보">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:items-end">
