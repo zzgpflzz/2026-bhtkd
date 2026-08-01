@@ -1298,7 +1298,7 @@ function ExamEditModal({
     <div className="fixed inset-0 bg-ink/40 z-50 flex items-start justify-center p-4 overflow-y-auto pt-20">
       <form
         onSubmit={handleSubmit}
-        className="bg-paper border border-line max-w-4xl w-full p-6 sm:p-8 my-8"
+        className="bg-paper border border-line max-w-7xl w-full p-6 sm:p-8 my-8"
       >
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
@@ -1323,24 +1323,40 @@ function ExamEditModal({
           </div>
         </div>
 
-        {/* 이전 심사 비교 */}
-        {previousExam && (
-          <div className="mb-6 border border-blue-200 bg-blue-50/30">
-            <button
-              type="button"
-              onClick={() => setShowPrevious(!showPrevious)}
-              className="w-full px-4 py-3 flex items-center justify-between text-sm font-medium text-ink hover:bg-blue-50/50 transition"
-            >
-              <span className="flex items-center gap-2">
-                {showPrevious ? "▼" : "▶"} 이전 심사 보기 ({previousExam.examDate})
-              </span>
-              <span className="text-xs text-muted">
-                {previousExam.currentGrade} → {previousExam.targetGrade} / {previousExam.passed ? "합격" : "재심사"}
-              </span>
-            </button>
+        {/* 좌우 비교 레이아웃 (데스크톱) or 상하 레이아웃 (모바일) */}
+        <div className={previousExam ? "lg:grid lg:grid-cols-[300px_1fr] lg:gap-6" : ""}>
+          {/* 왼쪽: 이전 심사 (데스크톱) / 상단: 이전 심사 (모바일) */}
+          {previousExam && (
+            <div className="mb-6 lg:mb-0 border border-blue-200 bg-blue-50/30 lg:sticky lg:top-0 lg:self-start">
+              {/* 모바일: 접을 수 있는 버튼 */}
+              <button
+                type="button"
+                onClick={() => setShowPrevious(!showPrevious)}
+                className="lg:hidden w-full px-4 py-3 flex items-center justify-between text-sm font-medium text-ink hover:bg-blue-50/50 transition"
+              >
+                <span className="flex items-center gap-2">
+                  {showPrevious ? "▼" : "▶"} 이전 심사 보기 ({previousExam.examDate})
+                </span>
+                <span className="text-xs text-muted">
+                  {previousExam.currentGrade} → {previousExam.targetGrade}
+                </span>
+              </button>
 
-            {showPrevious && (
-              <div className="px-4 pb-4 pt-2 space-y-3">
+              {/* 데스크톱: 항상 표시 */}
+              <div className="hidden lg:block px-4 py-3 border-b border-blue-200 bg-blue-100/50">
+                <div className="text-xs font-semibold text-ink mb-1">이전 심사</div>
+                <div className="text-xs text-muted">
+                  {previousExam.examDate} / {previousExam.currentGrade} → {previousExam.targetGrade}
+                </div>
+                <div className="text-xs mt-1">
+                  <span className={`px-2 py-0.5 ${previousExam.passed ? "bg-green-200 text-green-800" : "bg-red-200 text-red-800"}`}>
+                    {previousExam.passed ? "합격" : "재심사"}
+                  </span>
+                </div>
+              </div>
+
+              {/* 내용: 모바일에서는 showPrevious에 따라, 데스크톱에서는 항상 표시 */}
+              <div className={`px-4 pb-4 pt-2 space-y-3 ${showPrevious ? "block" : "hidden lg:block"}`}>
                 {/* 기본 수련 영역 */}
                 <div>
                   <div className="text-xs text-muted mb-2">기본 수련 영역</div>
@@ -1414,17 +1430,18 @@ function ExamEditModal({
                 {previousExam.comment && (
                   <div>
                     <div className="text-xs text-muted mb-1">관장님 코멘트</div>
-                    <div className="text-xs bg-white p-2 border border-blue-200">
+                    <div className="text-xs bg-white p-2 border border-blue-200 break-words">
                       {previousExam.comment}
                     </div>
                   </div>
                 )}
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
 
-        <Section title="기본 정보">
+          {/* 오른쪽: 새 심사 입력 (데스크톱) / 하단: 새 심사 입력 (모바일) */}
+          <div>
+            <Section title="기본 정보">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:items-end">
             <Field label="심사 월 (YYYY-MM)">
               <input
@@ -1571,6 +1588,8 @@ function ExamEditModal({
             placeholder="학생에게 전하고 싶은 메시지를 적어 주세요."
           />
         </Section>
+          </div>
+        </div>
 
         <div className="flex flex-col sm:flex-row gap-2 justify-between mt-6">
           <button
