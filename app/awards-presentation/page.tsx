@@ -173,11 +173,13 @@ function PresentationContent() {
           <h1 className="text-5xl md:text-7xl font-black text-white text-center mb-16 drop-shadow-2xl animate-fade-in tracking-tight">
             백호태권도 시상식
           </h1>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 max-w-7xl">
             {awards.map((award, index) => {
               // 카드 색상 가져오기 (localStorage에 저장된 color 사용)
               const cardColor = award.color || "#4A90E2";
-              const rotation = (index % 3 === 0 ? -3 : index % 3 === 1 ? 2 : -2);
+              // 더 다양한 기울임 각도
+              const rotations = [-8, 5, -4, 7, -6, 3, -5, 8, -3];
+              const rotation = rotations[index % rotations.length];
               return (
                 <button
                   key={award.id}
@@ -189,7 +191,7 @@ function PresentationContent() {
                     transform: `rotate(${rotation}deg)`,
                   }}
                 >
-                  <h3 className="text-3xl md:text-4xl font-black text-white text-center">
+                  <h3 className="text-3xl md:text-4xl font-black text-white text-center leading-tight">
                     {award.name}
                   </h3>
                 </button>
