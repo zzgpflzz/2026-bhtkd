@@ -177,7 +177,7 @@ function PresentationContent() {
             {awards.map((award, index) => {
               // 카드 색상 가져오기 및 변환
               const colorPalette = [
-                "#4A90E2", "#F5A623", "#E67E22", "#52C41A", "#A855F7", "#EC4899"
+                "#4A7CC7", "#F5A942", "#E67843", "#4CAF5E", "#9B59F7", "#EC4899"
               ];
               let cardColor = award.color || colorPalette[0];
 
@@ -203,7 +203,7 @@ function PresentationContent() {
                     transform: `rotate(${rotation}deg)`,
                   }}
                 >
-                  <h3 className="text-3xl md:text-4xl font-black text-white text-center leading-tight">
+                  <h3 className="text-3xl md:text-4xl font-black text-black text-center leading-tight">
                     {award.name}
                   </h3>
                 </button>
