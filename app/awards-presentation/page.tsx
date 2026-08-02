@@ -177,7 +177,7 @@ function PresentationContent() {
             {awards.map((award, index) => {
               // 카드 색상 가져오기 및 변환
               const colorPalette = [
-                "#3B82F6", "#FBBF24", "#F97316", "#22C55E", "#A855F7", "#EC4899"
+                "#0074EC", "#00AE24", "#B84EFF", "#FF5100", "#FFAE00", "#EC4899"
               ];
               let cardColor = award.color || colorPalette[0];
 
