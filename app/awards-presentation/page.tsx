@@ -175,11 +175,23 @@ function PresentationContent() {
           </h1>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 max-w-7xl">
             {awards.map((award, index) => {
-              // 카드 색상 가져오기 (localStorage에 저장된 color 사용)
-              const cardColor = award.color || "#4A90E2";
+              // 카드 색상 가져오기 및 변환
+              const colorPalette = [
+                "#4A90E2", "#F5A623", "#E67E22", "#52C41A", "#A855F7", "#EC4899"
+              ];
+              let cardColor = award.color || colorPalette[0];
+
+              // 이전 클래스 형식이면 hex 코드로 변환
+              if (cardColor.startsWith("bg-") || cardColor.startsWith("from-")) {
+                cardColor = colorPalette[index % colorPalette.length];
+              }
+
               // 더 다양한 기울임 각도
               const rotations = [-8, 5, -4, 7, -6, 3, -5, 8, -3];
               const rotation = rotations[index % rotations.length];
+
+              console.log("Award:", award.name, "Color:", cardColor);
+
               return (
                 <button
                   key={award.id}
