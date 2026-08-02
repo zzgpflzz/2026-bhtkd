@@ -11,12 +11,12 @@ interface Award {
 }
 
 const CARD_COLORS = [
-  "from-amber-500 via-yellow-400 to-amber-500",
-  "from-blue-500 via-cyan-400 to-blue-500",
-  "from-purple-500 via-pink-400 to-purple-500",
-  "from-green-500 via-emerald-400 to-green-500",
-  "from-red-500 via-orange-400 to-red-500",
-  "from-indigo-500 via-purple-400 to-indigo-500",
+  "#4A90E2", // 블루
+  "#F5A623", // 오렌지/골드
+  "#E67E22", // 산호/주황
+  "#52C41A", // 그린
+  "#A855F7", // 퍼플
+  "#EC4899", // 핑크
 ];
 
 export default function AwardsCeremony() {

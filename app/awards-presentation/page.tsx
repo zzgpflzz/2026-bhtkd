@@ -176,24 +176,21 @@ function PresentationContent() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {awards.map((award, index) => {
               // 카드 색상 가져오기 (localStorage에 저장된 color 사용)
-              const gradientClass = award.color || "from-amber-500 via-yellow-400 to-amber-500";
+              const cardColor = award.color || "#4A90E2";
               return (
                 <button
                   key={award.id}
                   onClick={() => handleAwardClick(award)}
-                  className={`award-card group relative bg-gradient-to-br ${gradientClass} rounded-xl p-8 shadow-2xl transition-all duration-300 cursor-pointer animate-slide-in`}
+                  className="award-card relative rounded-2xl p-8 shadow-2xl transition-all duration-300 cursor-pointer animate-slide-in"
                   style={{
+                    backgroundColor: cardColor,
                     animationDelay: `${index * 0.1}s`,
                   }}
                 >
                   <div className="relative z-10">
-                    <h3 className="text-2xl md:text-3xl font-bold text-white text-center drop-shadow-lg">
+                    <h3 className="text-2xl md:text-3xl font-bold text-white text-center">
                       {award.name}
                     </h3>
-                  </div>
-                  {/* Shine effect */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                   </div>
                 </button>
               );
@@ -316,10 +313,10 @@ function PresentationContent() {
           animation: bounce-once 1s ease-out;
         }
         .award-card {
-          transform: translateY(0) rotateY(0deg);
+          transform: translateY(0) rotate(0deg);
         }
         .award-card:hover {
-          transform: translateY(-10px) rotateY(5deg);
+          transform: translateY(-10px) rotate(-5deg);
         }
       `}</style>
     </div>
