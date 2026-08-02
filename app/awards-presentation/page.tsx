@@ -177,21 +177,21 @@ function PresentationContent() {
             {awards.map((award, index) => {
               // 카드 색상 가져오기 (localStorage에 저장된 color 사용)
               const cardColor = award.color || "#4A90E2";
+              const rotation = (index % 3 === 0 ? -3 : index % 3 === 1 ? 2 : -2);
               return (
                 <button
                   key={award.id}
                   onClick={() => handleAwardClick(award)}
-                  className="award-card relative rounded-2xl p-8 shadow-2xl transition-all duration-300 cursor-pointer animate-slide-in"
+                  className="award-card relative rounded-3xl p-12 shadow-2xl transition-all duration-300 cursor-pointer animate-slide-in flex items-center justify-center min-h-[280px]"
                   style={{
                     backgroundColor: cardColor,
                     animationDelay: `${index * 0.1}s`,
+                    transform: `rotate(${rotation}deg)`,
                   }}
                 >
-                  <div className="relative z-10">
-                    <h3 className="text-2xl md:text-3xl font-bold text-white text-center">
-                      {award.name}
-                    </h3>
-                  </div>
+                  <h3 className="text-3xl md:text-4xl font-black text-white text-center">
+                    {award.name}
+                  </h3>
                 </button>
               );
             })}
@@ -312,11 +312,8 @@ function PresentationContent() {
         .animate-bounce-once {
           animation: bounce-once 1s ease-out;
         }
-        .award-card {
-          transform: translateY(0) rotate(0deg);
-        }
         .award-card:hover {
-          transform: translateY(-10px) rotate(-5deg);
+          transform: translateY(-10px) scale(1.05) !important;
         }
       `}</style>
     </div>
