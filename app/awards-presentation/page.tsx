@@ -156,50 +156,45 @@ function PresentationContent() {
   }
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-pink-900 flex items-center justify-center overflow-hidden">
+    <div className="fixed inset-0 bg-black flex items-center justify-center overflow-hidden">
       {/* YouTube player (hidden) */}
       <div className="absolute -left-[9999px] w-0 h-0 overflow-hidden">
         <div id="youtube-player"></div>
       </div>
 
-      {/* Floating background decorations */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-16 h-16 bg-white/10 rounded-full animate-float"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${5 + Math.random() * 5}s`,
-            }}
-          />
-        ))}
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_black_100%)]"></div>
       </div>
 
       {/* Main: Award cards */}
       {!selectedAward && stage === "main" && (
         <div className="relative z-10 w-full max-w-6xl px-8">
-          <h1 className="text-5xl md:text-6xl font-black text-white text-center mb-12 drop-shadow-2xl animate-fade-in">
-            🏆 시상식 🏆
+          <h1 className="text-5xl md:text-7xl font-black text-white text-center mb-16 drop-shadow-2xl animate-fade-in tracking-tight">
+            백호태권도 시상식
           </h1>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {awards.map((award, index) => {
-              const rotation = (index % 3 === 0 ? -2 : index % 3 === 1 ? 1 : -1);
+              // 카드 색상 가져오기 (localStorage에 저장된 color 사용)
+              const gradientClass = award.color || "from-amber-500 via-yellow-400 to-amber-500";
               return (
                 <button
                   key={award.id}
                   onClick={() => handleAwardClick(award)}
-                  className={`${award.color} border-2 rounded-2xl p-8 shadow-2xl transition transform hover:scale-110 hover:shadow-3xl cursor-pointer animate-slide-in`}
+                  className={`award-card group relative bg-gradient-to-br ${gradientClass} rounded-xl p-8 shadow-2xl transition-all duration-300 cursor-pointer animate-slide-in`}
                   style={{
-                    transform: `rotate(${rotation}deg)`,
                     animationDelay: `${index * 0.1}s`,
                   }}
                 >
-                  <h3 className="text-2xl md:text-3xl font-bold text-ink text-center">
-                    {award.name}
-                  </h3>
+                  <div className="relative z-10">
+                    <h3 className="text-2xl md:text-3xl font-bold text-white text-center drop-shadow-lg">
+                      {award.name}
+                    </h3>
+                  </div>
+                  {/* Shine effect */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                  </div>
                 </button>
               );
             })}
@@ -253,14 +248,6 @@ function PresentationContent() {
       )}
 
       <style jsx>{`
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0px) rotate(0deg);
-          }
-          50% {
-            transform: translateY(-30px) rotate(180deg);
-          }
-        }
         @keyframes fade-in {
           from {
             opacity: 0;
@@ -313,9 +300,6 @@ function PresentationContent() {
             transform: scale(1) rotate(0deg);
           }
         }
-        .animate-float {
-          animation: float linear infinite;
-        }
         .animate-fade-in {
           animation: fade-in 1s ease-out;
         }
@@ -330,6 +314,12 @@ function PresentationContent() {
         }
         .animate-bounce-once {
           animation: bounce-once 1s ease-out;
+        }
+        .award-card {
+          transform: translateY(0) rotateY(0deg);
+        }
+        .award-card:hover {
+          transform: translateY(-10px) rotateY(5deg);
         }
       `}</style>
     </div>

@@ -11,12 +11,12 @@ interface Award {
 }
 
 const CARD_COLORS = [
-  "bg-pink-100 border-pink-300",
-  "bg-blue-100 border-blue-300",
-  "bg-yellow-100 border-yellow-300",
-  "bg-green-100 border-green-300",
-  "bg-purple-100 border-purple-300",
-  "bg-orange-100 border-orange-300",
+  "from-amber-500 via-yellow-400 to-amber-500",
+  "from-blue-500 via-cyan-400 to-blue-500",
+  "from-purple-500 via-pink-400 to-purple-500",
+  "from-green-500 via-emerald-400 to-green-500",
+  "from-red-500 via-orange-400 to-red-500",
+  "from-indigo-500 via-purple-400 to-indigo-500",
 ];
 
 export default function AwardsCeremony() {
