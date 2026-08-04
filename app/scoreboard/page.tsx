@@ -1,253 +1,198 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Minus, Trash2, Edit2, Check, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Minus } from "lucide-react";
 
 interface Team {
   id: string;
   name: string;
+  color: string;
   score: number;
 }
 
 export default function ScoreboardPage() {
   const [teams, setTeams] = useState<Team[]>([]);
-  const [newTeamName, setNewTeamName] = useState("");
-  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
-  const [editingTeamName, setEditingTeamName] = useState("");
 
-  // 팀 추가
-  const handleAddTeam = () => {
-    if (!newTeamName.trim()) {
-      alert("팀 이름을 입력해주세요.");
-      return;
+  useEffect(() => {
+    // localStorage에서 팀 데이터 가져오기
+    try {
+      const scoreboardTeamsActive = localStorage.getItem("scoreboardTeamsActive");
+      if (scoreboardTeamsActive) {
+        const parsed = JSON.parse(scoreboardTeamsActive);
+        // 점수 0으로 초기화하여 설정
+        const teamsWithScore = parsed.map((team: any) => ({
+          ...team,
+          score: 0,
+        }));
+        setTeams(teamsWithScore);
+      }
+    } catch (error) {
+      console.error("Failed to load scoreboard data:", error);
     }
-    const newTeam: Team = {
-      id: `team-${Date.now()}`,
-      name: newTeamName.trim(),
-      score: 0,
-    };
-    setTeams([...teams, newTeam]);
-    setNewTeamName("");
-  };
+  }, []);
 
-  // 팀 삭제
-  const handleDeleteTeam = (id: string) => {
-    if (confirm("이 팀을 삭제하시겠습니까?")) {
-      setTeams(teams.filter((t) => t.id !== id));
-    }
-  };
-
-  // 점수 증가
-  const handleIncreaseScore = (id: string, amount: number) => {
-    setTeams(
-      teams.map((t) => (t.id === id ? { ...t, score: t.score + amount } : t))
-    );
-  };
-
-  // 점수 감소
-  const handleDecreaseScore = (id: string, amount: number) => {
+  // 점수 변경
+  const handleChangeScore = (id: string, delta: number) => {
     setTeams(
       teams.map((t) =>
-        t.id === id ? { ...t, score: Math.max(0, t.score - amount) } : t
+        t.id === id ? { ...t, score: Math.max(0, t.score + delta) } : t
       )
     );
   };
 
-  // 팀 이름 수정 시작
-  const startEditingTeam = (team: Team) => {
-    setEditingTeamId(team.id);
-    setEditingTeamName(team.name);
-  };
+  // 최고 점수 찾기
+  const maxScore = Math.max(...teams.map((t) => t.score), 0);
 
-  // 팀 이름 수정 저장
-  const saveEditingTeam = () => {
-    if (!editingTeamName.trim()) {
-      alert("팀 이름을 입력해주세요.");
-      return;
-    }
-    setTeams(
-      teams.map((t) =>
-        t.id === editingTeamId ? { ...t, name: editingTeamName.trim() } : t
-      )
+  if (teams.length === 0) {
+    return (
+      <main className="min-h-screen bg-black text-white flex items-center justify-center p-8">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold mb-4">점수기록판</h1>
+          <p className="text-xl text-gray-400">팀 데이터를 불러올 수 없습니다.</p>
+        </div>
+      </main>
     );
-    setEditingTeamId(null);
-    setEditingTeamName("");
-  };
-
-  // 팀 이름 수정 취소
-  const cancelEditingTeam = () => {
-    setEditingTeamId(null);
-    setEditingTeamName("");
-  };
-
-  // 점수 순으로 정렬
-  const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
+  }
 
   return (
-    <main className="min-h-screen bg-paper text-ink p-4 sm:p-8">
-      <div className="max-w-4xl mx-auto">
+    <main className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white p-4 sm:p-8">
+      <div className="max-w-7xl mx-auto">
         {/* 헤더 */}
         <div className="mb-8 text-center">
-          <h1 className="text-3xl sm:text-4xl font-bold text-ink mb-2">
-            팀 점수기록판
+          <h1 className="text-5xl sm:text-7xl font-black text-white mb-4 drop-shadow-2xl animate-fade-in tracking-tight">
+            🏆 점수판 🏆
           </h1>
-          <p className="text-sm text-muted">
-            팀을 추가하고 점수를 기록하세요 (새로고침 시 초기화됨)
-          </p>
         </div>
 
-        {/* 팀 추가 입력 */}
-        <div className="mb-6 border border-line p-4 bg-white">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newTeamName}
-              onChange={(e) => setNewTeamName(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleAddTeam()}
-              placeholder="팀 이름 입력"
-              className="flex-1 px-4 py-2 border border-line focus:outline-none focus:border-ink"
-            />
-            <button
-              onClick={handleAddTeam}
-              className="px-6 py-2 bg-point hover:bg-point-dark text-white font-semibold inline-flex items-center gap-2 transition"
-            >
-              <Plus size={18} />
-              팀 추가
-            </button>
-          </div>
-        </div>
+        {/* 스코어보드 */}
+        <div className="grid grid-cols-1 gap-6">
+          {teams.map((team, index) => {
+            // 점수에 따른 바 너비 계산
+            const barWidth = maxScore > 0 ? (team.score / maxScore) * 100 : 0;
 
-        {/* 팀 목록 */}
-        {teams.length === 0 ? (
-          <div className="border border-line p-12 text-center text-muted">
-            팀을 추가하여 점수 기록을 시작하세요.
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {sortedTeams.map((team, index) => (
+            return (
               <div
                 key={team.id}
-                className="border-2 border-line p-4 bg-white hover:border-ink transition"
+                className="relative overflow-hidden rounded-2xl shadow-2xl animate-slide-in"
+                style={{
+                  animationDelay: `${index * 0.1}s`,
+                }}
               >
-                <div className="flex items-center justify-between gap-4">
-                  {/* 순위 */}
-                  <div className="text-2xl font-bold text-muted w-12 text-center">
-                    {index + 1}
-                  </div>
+                {/* 배경 바 (점수에 따라 늘어남) */}
+                <div
+                  className="absolute inset-0 transition-all duration-500 ease-out"
+                  style={{
+                    background: `linear-gradient(90deg, ${team.color} 0%, ${team.color}CC ${barWidth}%, #1a1a1a ${barWidth}%)`,
+                  }}
+                />
 
+                {/* 컨텐츠 */}
+                <div className="relative z-10 p-6 sm:p-8 flex items-center justify-between gap-4">
                   {/* 팀 이름 */}
                   <div className="flex-1">
-                    {editingTeamId === team.id ? (
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={editingTeamName}
-                          onChange={(e) => setEditingTeamName(e.target.value)}
-                          onKeyPress={(e) =>
-                            e.key === "Enter" && saveEditingTeam()
-                          }
-                          className="flex-1 px-3 py-2 border border-ink focus:outline-none text-xl font-semibold"
-                          autoFocus
-                        />
-                        <button
-                          onClick={saveEditingTeam}
-                          className="px-3 py-2 bg-ink text-white hover:bg-ink/85 transition"
-                        >
-                          <Check size={18} />
-                        </button>
-                        <button
-                          onClick={cancelEditingTeam}
-                          className="px-3 py-2 border border-line hover:border-ink transition"
-                        >
-                          <X size={18} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-xl font-semibold text-ink">
-                          {team.name}
-                        </h3>
-                        <button
-                          onClick={() => startEditingTeam(team)}
-                          className="p-1 text-muted hover:text-ink transition"
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                      </div>
-                    )}
+                    <h2
+                      className="text-3xl sm:text-5xl font-black drop-shadow-lg"
+                      style={{
+                        color: barWidth > 30 ? '#000000' : '#ffffff',
+                        transition: 'color 0.3s ease',
+                      }}
+                    >
+                      {team.name}
+                    </h2>
                   </div>
 
                   {/* 점수 */}
-                  <div className="text-4xl font-bold text-point min-w-[120px] text-center">
+                  <div
+                    className="text-6xl sm:text-8xl font-black drop-shadow-2xl min-w-[200px] text-right"
+                    style={{
+                      color: barWidth > 50 ? '#000000' : team.color,
+                      transition: 'color 0.3s ease',
+                      textShadow: barWidth > 50 ? '4px 4px 8px rgba(0,0,0,0.3)' : `4px 4px 12px ${team.color}`,
+                    }}
+                  >
                     {team.score}
                   </div>
 
                   {/* 점수 조절 버튼 */}
                   <div className="flex flex-col gap-2">
+                    {/* + 버튼 */}
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleIncreaseScore(team.id, 10)}
-                        className="px-3 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold transition"
+                        onClick={() => handleChangeScore(team.id, 100)}
+                        className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-bold text-lg rounded-lg shadow-lg transition-all hover:scale-105 active:scale-95"
+                      >
+                        +100
+                      </button>
+                      <button
+                        onClick={() => handleChangeScore(team.id, 10)}
+                        className="px-4 py-3 bg-green-500 hover:bg-green-600 text-white font-bold text-lg rounded-lg shadow-lg transition-all hover:scale-105 active:scale-95"
                       >
                         +10
                       </button>
                       <button
-                        onClick={() => handleIncreaseScore(team.id, 5)}
-                        className="px-3 py-2 bg-green-400 hover:bg-green-500 text-white font-semibold transition"
-                      >
-                        +5
-                      </button>
-                      <button
-                        onClick={() => handleIncreaseScore(team.id, 1)}
-                        className="px-3 py-2 bg-green-300 hover:bg-green-400 text-white font-semibold transition"
+                        onClick={() => handleChangeScore(team.id, 1)}
+                        className="px-4 py-3 bg-green-400 hover:bg-green-500 text-white font-bold text-lg rounded-lg shadow-lg transition-all hover:scale-105 active:scale-95"
                       >
                         +1
                       </button>
                     </div>
+                    {/* - 버튼 */}
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleDecreaseScore(team.id, 10)}
-                        className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold transition"
+                        onClick={() => handleChangeScore(team.id, -100)}
+                        className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold text-lg rounded-lg shadow-lg transition-all hover:scale-105 active:scale-95"
+                      >
+                        -100
+                      </button>
+                      <button
+                        onClick={() => handleChangeScore(team.id, -10)}
+                        className="px-4 py-3 bg-red-500 hover:bg-red-600 text-white font-bold text-lg rounded-lg shadow-lg transition-all hover:scale-105 active:scale-95"
                       >
                         -10
                       </button>
                       <button
-                        onClick={() => handleDecreaseScore(team.id, 5)}
-                        className="px-3 py-2 bg-red-400 hover:bg-red-500 text-white font-semibold transition"
-                      >
-                        -5
-                      </button>
-                      <button
-                        onClick={() => handleDecreaseScore(team.id, 1)}
-                        className="px-3 py-2 bg-red-300 hover:bg-red-400 text-white font-semibold transition"
+                        onClick={() => handleChangeScore(team.id, -1)}
+                        className="px-4 py-3 bg-red-400 hover:bg-red-500 text-white font-bold text-lg rounded-lg shadow-lg transition-all hover:scale-105 active:scale-95"
                       >
                         -1
                       </button>
                     </div>
                   </div>
-
-                  {/* 삭제 버튼 */}
-                  <button
-                    onClick={() => handleDeleteTeam(team.id)}
-                    className="p-3 text-red-500 hover:bg-red-50 border border-line hover:border-red-500 transition"
-                  >
-                    <Trash2 size={18} />
-                  </button>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-
-        {/* 하단 안내 */}
-        {teams.length > 0 && (
-          <div className="mt-8 text-center">
-            <p className="text-xs text-muted">
-              ⚠️ 이 페이지는 새로고침 시 모든 데이터가 초기화됩니다
-            </p>
-          </div>
-        )}
+            );
+          })}
+        </div>
       </div>
+
+      <style jsx>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: scale(0.8);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        @keyframes slide-in {
+          from {
+            opacity: 0;
+            transform: translateX(-50px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 1s ease-out;
+        }
+        .animate-slide-in {
+          animation: slide-in 0.6s ease-out backwards;
+        }
+      `}</style>
     </main>
   );
 }
