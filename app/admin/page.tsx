@@ -22,6 +22,7 @@ import ParentContact from "../../components/ParentContact";
 import ConsultManagement from "../../components/ConsultManagement";
 import TuitionManagement from "../../components/TuitionManagement";
 import AwardsCeremony from "../../components/AwardsCeremony";
+import Scoreboard from "../../components/Scoreboard";
 import {
   loadStudents,
   upsertStudent,
@@ -101,7 +102,7 @@ export default function AdminPage() {
   const [pwError, setPwError] = useState("");
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition" | "awards">("students");
+  const [activeTab, setActiveTab] = useState<"students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition" | "awards" | "scoreboard">("students");
 
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState("");
@@ -706,6 +707,10 @@ export default function AdminPage() {
         {activeTab === "awards" && (
           <AwardsCeremony />
         )}
+
+        {activeTab === "scoreboard" && (
+          <Scoreboard />
+        )}
         </div>
 
         {editingStudent && (
@@ -1252,7 +1257,6 @@ function ExamEditModal({
   // 이전 심사 조회
   useEffect(() => {
     (async () => {
-      const exams = await getDraftExams(studentId);
       const finalExams = await getStudentExams(studentId);
       const allExams = [...finalExams].filter((e) => !e.isDraft && e.passed);
 

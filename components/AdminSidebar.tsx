@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, User, Calendar, Award, Phone, MessageSquare, DollarSign, Menu, X, Trophy } from "lucide-react";
+import { ArrowLeft, User, Calendar, Award, Phone, MessageSquare, DollarSign, Menu, X, Trophy, ClipboardList } from "lucide-react";
 
 interface AdminSidebarProps {
-  activeTab: "students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition" | "awards";
-  onTabChange: (tab: "students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition" | "awards") => void;
+  activeTab: "students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition" | "awards" | "scoreboard";
+  onTabChange: (tab: "students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition" | "awards" | "scoreboard") => void;
   onLogout?: () => void;
 }
 
@@ -148,6 +148,17 @@ export default function AdminSidebar({ activeTab, onTabChange, onLogout }: Admin
           >
             <Trophy size={18} strokeWidth={1.5} />
             <span className="text-sm font-medium">시상식</span>
+          </button>
+          <button
+            onClick={() => handleTabChange("scoreboard")}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded transition ${
+              activeTab === "scoreboard"
+                ? "bg-ink text-paper"
+                : "text-ink-soft hover:bg-line-soft hover:text-ink"
+            }`}
+          >
+            <ClipboardList size={18} strokeWidth={1.5} />
+            <span className="text-sm font-medium">점수기록판</span>
           </button>
         </div>
       </nav>
