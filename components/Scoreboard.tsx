@@ -9,7 +9,12 @@ interface Team {
   color: string;
 }
 
-const TEAM_COLORS = [
+const TEAM_COLORS_2 = [
+  "#FF0044", // 메인 레드
+  "#007AFF", // 블루
+];
+
+const TEAM_COLORS_4 = [
   "#0074EC", // 블루
   "#00AE24", // 그린
   "#FF5100", // 오렌지
@@ -20,12 +25,17 @@ export default function Scoreboard() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const [title, setTitle] = useState("SCOREBOARD");
 
   useEffect(() => {
     // Load from localStorage
     const saved = localStorage.getItem("scoreboardTeams");
     if (saved) {
       setTeams(JSON.parse(saved));
+    }
+    const savedTitle = localStorage.getItem("scoreboardTitle");
+    if (savedTitle) {
+      setTitle(savedTitle);
     }
   }, []);
 
@@ -34,11 +44,17 @@ export default function Scoreboard() {
     localStorage.setItem("scoreboardTeams", JSON.stringify(newTeams));
   }
 
+  function saveTitle(newTitle: string) {
+    setTitle(newTitle);
+    localStorage.setItem("scoreboardTitle", newTitle);
+  }
+
   function handleAddTeam(team: Omit<Team, "id" | "color">) {
+    const colors = teams.length < 2 ? TEAM_COLORS_2 : TEAM_COLORS_4;
     const newTeam: Team = {
       ...team,
       id: `team-${Date.now()}`,
-      color: TEAM_COLORS[teams.length % TEAM_COLORS.length],
+      color: colors[teams.length % colors.length],
     };
     saveTeams([...teams, newTeam]);
     setShowAddModal(false);
@@ -62,6 +78,7 @@ export default function Scoreboard() {
     }
     // localStorage를 통해 데이터 전달
     localStorage.setItem("scoreboardTeamsActive", JSON.stringify(teams));
+    localStorage.setItem("scoreboardTitleActive", title);
     const scoreboardUrl = "/scoreboard";
     window.open(scoreboardUrl, "_blank", "fullscreen=yes,width=1920,height=1080");
   }
@@ -74,6 +91,23 @@ export default function Scoreboard() {
         <h1 className="text-2xl font-semibold text-ink mb-2">점수기록판</h1>
         <p className="text-sm text-muted">
           팀을 등록하고 점수판을 시작하세요. (최소 2팀, 최대 4팀)
+        </p>
+      </div>
+
+      {/* 타이틀 설정 */}
+      <div className="mb-6 border border-line p-4 bg-white">
+        <label className="block text-sm font-medium text-ink mb-2">
+          점수판 타이틀
+        </label>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => saveTitle(e.target.value)}
+          placeholder="SCOREBOARD"
+          className="form-input w-full"
+        />
+        <p className="text-xs text-muted mt-1">
+          점수판 상단에 표시될 타이틀을 입력하세요
         </p>
       </div>
 
@@ -179,6 +213,32 @@ interface TeamModalProps {
 function TeamModal({ team, onSave, onClose }: TeamModalProps) {
   const [name, setName] = useState(team?.name || "");
 
+  const teamNames = [
+    // 멋진 이름들
+    "백호", "청룡", "주작", "현무",
+    "용맹", "승리", "강철", "불꽃",
+    "번개", "천둥", "태풍", "폭풍",
+    "맹호", "독수리", "사자", "표범",
+    "전사", "용사", "영웅", "투사",
+    "화랑", "무사", "기사", "장군",
+    "혜성", "유성", "별빛", "태양",
+    "달빛", "은하", "우주", "행성",
+    // 귀여운/웃긴 이름들
+    "바보", "똥개", "멍멍", "야옹",
+    "뚱이", "삐약", "꼬꼬", "꾸러기",
+    "깜찍", "앙증", "귀요미", "토실",
+    "동글", "통통", "꼬마", "쪼꼬미",
+    "방울", "콩알", "햄찌", "복슬",
+    "폭신", "말랑", "쫀득", "몽글",
+    "두부", "만두", "떡볶이", "김밥",
+    "호빵", "붕어빵", "약과", "꿀떡",
+  ];
+
+  function handleRandomName() {
+    const randomName = teamNames[Math.floor(Math.random() * teamNames.length)];
+    setName(randomName);
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) {
@@ -201,14 +261,23 @@ function TeamModal({ team, onSave, onClose }: TeamModalProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm text-muted mb-1">팀 이름</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="예) 백호팀"
-              className="form-input w-full"
-              autoFocus
-            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="예) 백호팀"
+                className="form-input flex-1"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={handleRandomName}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-ink text-sm font-medium border border-line transition"
+              >
+                랜덤
+              </button>
+            </div>
           </div>
           <div className="flex gap-3 pt-4">
             <button
