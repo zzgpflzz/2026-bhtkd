@@ -22,6 +22,14 @@ function PresentationContent() {
     }
     return null;
   });
+  const [fanfareAudio] = useState(() => {
+    if (typeof window !== "undefined") {
+      const audio = new Audio("/fanfare.mp3");
+      audio.volume = 0.7;
+      return audio;
+    }
+    return null;
+  });
 
   useEffect(() => {
     // localStorage에서 데이터 가져오기
@@ -129,6 +137,13 @@ function PresentationContent() {
         if (drumrollAudio) {
           drumrollAudio.pause();
         }
+        // Play fanfare when revealing the winner
+        if (fanfareAudio) {
+          fanfareAudio.currentTime = 0;
+          fanfareAudio.play().catch((error) => {
+            console.error("Failed to play fanfare:", error);
+          });
+        }
       }, 3000);
 
       return () => {
@@ -137,9 +152,13 @@ function PresentationContent() {
           drumrollAudio.pause();
           drumrollAudio.currentTime = 0;
         }
+        if (fanfareAudio) {
+          fanfareAudio.pause();
+          fanfareAudio.currentTime = 0;
+        }
       };
     }
-  }, [selectedAward, drumrollAudio]);
+  }, [selectedAward, drumrollAudio, fanfareAudio]);
 
   function extractYouTubeId(url: string): string | null {
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
