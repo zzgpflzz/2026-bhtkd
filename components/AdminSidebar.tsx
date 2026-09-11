@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, User, Calendar, Award, Phone, MessageSquare, DollarSign, Menu, X, Trophy, ClipboardList } from "lucide-react";
+import { ArrowLeft, User, Calendar, Award, Phone, MessageSquare, DollarSign, Menu, X, Trophy, ClipboardList, Timer } from "lucide-react";
 
 interface AdminSidebarProps {
-  activeTab: "students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition" | "awards" | "scoreboard";
-  onTabChange: (tab: "students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition" | "awards" | "scoreboard") => void;
+  activeTab: "students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition" | "awards" | "scoreboard" | "timer";
+  onTabChange: (tab: "students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition" | "awards" | "scoreboard" | "timer") => void;
   onLogout?: () => void;
 }
 
@@ -159,6 +159,17 @@ export default function AdminSidebar({ activeTab, onTabChange, onLogout }: Admin
           >
             <ClipboardList size={18} strokeWidth={1.5} />
             <span className="text-sm font-medium">점수기록판</span>
+          </button>
+          <button
+            onClick={() => handleTabChange("timer")}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded transition ${
+              activeTab === "timer"
+                ? "bg-ink text-paper"
+                : "text-ink-soft hover:bg-line-soft hover:text-ink"
+            }`}
+          >
+            <Timer size={18} strokeWidth={1.5} />
+            <span className="text-sm font-medium">타이머/스톱워치</span>
           </button>
         </div>
       </nav>

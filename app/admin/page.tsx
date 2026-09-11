@@ -23,6 +23,7 @@ import ConsultManagement from "../../components/ConsultManagement";
 import TuitionManagement from "../../components/TuitionManagement";
 import AwardsCeremony from "../../components/AwardsCeremony";
 import Scoreboard from "../../components/Scoreboard";
+import TimerPanel from "../../components/TimerPanel";
 import {
   loadStudents,
   upsertStudent,
@@ -102,7 +103,7 @@ export default function AdminPage() {
   const [pwError, setPwError] = useState("");
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition" | "awards" | "scoreboard">("students");
+  const [activeTab, setActiveTab] = useState<"students" | "vehicle" | "attendance" | "contacts" | "consult" | "tuition" | "awards" | "scoreboard" | "timer">("students");
 
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState("");
@@ -710,6 +711,10 @@ export default function AdminPage() {
 
         {activeTab === "scoreboard" && (
           <Scoreboard />
+        )}
+
+        {activeTab === "timer" && (
+          <TimerPanel />
         )}
         </div>
 

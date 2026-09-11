@@ -2,3 +2,9 @@ node_modules
 .vercel
 .next
 .env*.local
+
+# Claude Code local settings
+.claude/
+
+# TypeScript build info
+*.tsbuildinfo
