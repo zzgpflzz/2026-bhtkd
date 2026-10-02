@@ -1258,6 +1258,10 @@ function ExamEditModal({
   const [saving, setSaving] = useState(false);
   const [previousExam, setPreviousExam] = useState<Exam | null>(null);
   const [showPrevious, setShowPrevious] = useState(false);
+  // 관장님 한줄 코멘트 사용 여부 (옵션) — 기존 코멘트가 있으면 체크된 상태로 시작
+  const [commentEnabled, setCommentEnabled] = useState<boolean>(
+    !!exam.comment?.trim(),
+  );
 
   // 이전 심사 조회
   useEffect(() => {
@@ -1278,7 +1282,11 @@ function ExamEditModal({
   const saveDraft = async () => {
     setSaving(true);
     try {
-      const draftData = { ...form, isDraft: true };
+      const draftData = {
+        ...form,
+        comment: commentEnabled ? form.comment : "",
+        isDraft: true,
+      };
       await onSave(draftData); // onSave를 호출하여 상위 컴포넌트 상태 업데이트
       alert("임시저장되었습니다.");
       // onSave 내부에서 onClose가 호출되므로 여기서는 호출하지 않음
@@ -1295,7 +1303,11 @@ function ExamEditModal({
     e.preventDefault();
     setSaving(true);
     try {
-      const finalData = { ...form, isDraft: false };
+      const finalData = {
+        ...form,
+        comment: commentEnabled ? form.comment : "",
+        isDraft: false,
+      };
       await onSave(finalData);
     } catch (error) {
       console.error("최종 저장 실패:", error);
@@ -1593,14 +1605,25 @@ function ExamEditModal({
           </div>
         </Section>
 
-        <Section title="관장님 한줄 코멘트">
-          <textarea
-            value={form.comment}
-            onChange={(e) => update("comment", e.target.value)}
-            rows={4}
-            className="form-input leading-loose"
-            placeholder="학생에게 전하고 싶은 메시지를 적어 주세요."
-          />
+        <Section title="관장님 한줄 코멘트 (선택)">
+          <label className="inline-flex items-center gap-2 text-sm text-ink-soft cursor-pointer select-none mb-3">
+            <input
+              type="checkbox"
+              checked={commentEnabled}
+              onChange={(e) => setCommentEnabled(e.target.checked)}
+              className="w-4 h-4"
+            />
+            관장님 한줄 코멘트 입력하기
+          </label>
+          {commentEnabled && (
+            <textarea
+              value={form.comment}
+              onChange={(e) => update("comment", e.target.value)}
+              rows={4}
+              className="form-input leading-loose"
+              placeholder="학생에게 전하고 싶은 메시지를 적어 주세요."
+            />
+          )}
         </Section>
           </div>
         </div>

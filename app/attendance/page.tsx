@@ -111,14 +111,7 @@ export default function AttendancePage() {
       return;
     }
 
-    // 결석 원생 중 사유 미입력 확인
-    const missingReason = Array.from(absentStudents).find(
-      (id) => !absentReasons[id]?.trim(),
-    );
-    if (missingReason) {
-      alert("결석 사유를 모두 입력해 주세요.");
-      return;
-    }
+    // 결석 사유는 선택 입력 (사유 없이도 결석 처리 가능)
 
     setSaving(true);
     try {
@@ -129,7 +122,9 @@ export default function AttendancePage() {
           studentId: student.id,
           date: selectedDate,
           status: isAbsent ? "absent" : "present",
-          reason: isAbsent ? absentReasons[student.id] : undefined,
+          reason: isAbsent
+            ? absentReasons[student.id]?.trim() || undefined
+            : undefined,
           recordedAt: new Date().toISOString(),
         };
       });
@@ -312,7 +307,7 @@ export default function AttendancePage() {
                                 {isAbsent && (
                                   <div className="mt-2">
                                     <label className="block text-xs text-muted mb-1">
-                                      결석 사유
+                                      결석 사유 (선택)
                                     </label>
                                     <input
                                       type="text"
