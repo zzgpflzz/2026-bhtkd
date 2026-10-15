@@ -35,6 +35,7 @@ import {
   newExamTemplateWithPrevious,
   getStudentExams,
   getDraftExams,
+  loadExams,
   compressImageDataURL,
   uploadImageToStorage,
   getStudentCurrentGrade,
@@ -115,6 +116,18 @@ export default function AdminPage() {
   const [selectedForCertificate, setSelectedForCertificate] = useState<Set<string>>(new Set());
   const [generatingCertificates, setGeneratingCertificates] = useState(false);
   const [showManualCertificateModal, setShowManualCertificateModal] = useState(false);
+  // 전체 학생의 임시저장본 (일괄 저장용)
+  const [allDraftExams, setAllDraftExams] = useState<Exam[]>([]);
+  const [bulkSavingDrafts, setBulkSavingDrafts] = useState(false);
+
+  const refreshAllDrafts = async (force = false) => {
+    try {
+      const list = await loadExams(force);
+      setAllDraftExams((list || []).filter((e) => e.isDraft === true));
+    } catch (error) {
+      console.error("❌ Load drafts error:", error);
+    }
+  };
 
   useEffect(() => {
     const savedAuth = sessionStorage.getItem("baekho-admin-auth");
@@ -134,6 +147,7 @@ export default function AdminPage() {
         const list = await loadStudents();
         setStudents(list || []);
         setDataLoading(false);
+        refreshAllDrafts();
 
         const elapsed = performance.now() - startTime;
         console.log(
@@ -364,6 +378,7 @@ export default function AdminPage() {
       if (selectedStudent) {
         setSelectedStudent({ ...selectedStudent });
       }
+      refreshAllDrafts();
     } catch (error) {
       console.error("❌ Save exam error:", error);
       alert("심사 저장에 실패했습니다: " + String(error));
@@ -371,6 +386,98 @@ export default function AdminPage() {
         setSelectedStudent({ ...selectedStudent });
       }
     }
+  };
+
+  // 임시저장본 일괄 최종저장
+  const handleBulkSaveDrafts = async () => {
+    // 최신 데이터 기준으로 다시 조회
+    const latest = await loadExams(true);
+    const drafts = (latest || []).filter((e) => e.isDraft === true);
+    setAllDraftExams(drafts);
+
+    if (drafts.length === 0) {
+      alert("임시저장된 심사가 없습니다.");
+      return;
+    }
+
+    const nameOf = (id: string) =>
+      students.find((s) => s.id === id)?.name || "(알 수 없음)";
+    const studentIds = Array.from(new Set(drafts.map((d) => d.studentId)));
+    const names = studentIds.map(nameOf);
+    const preview =
+      names.length > 10
+        ? names.slice(0, 10).join(", ") + ` 외 ${names.length - 10}명`
+        : names.join(", ");
+
+    const confirmed = confirm(
+      `임시저장된 심사 ${drafts.length}건(${studentIds.length}명)을 모두 최종 저장하시겠습니까?\n\n` +
+        `대상: ${preview}\n\n` +
+        `최종 저장되면 학부모 페이지에 공개되고, 합격 처리된 학생은 현재 급수가 자동으로 승급됩니다.`,
+    );
+    if (!confirmed) return;
+
+    setBulkSavingDrafts(true);
+    const succeeded: Exam[] = [];
+    const failed: { exam: Exam; error: unknown }[] = [];
+
+    // 캐시 경합을 피하기 위해 순차 저장
+    for (const draft of drafts) {
+      const finalExam: Exam = { ...draft, isDraft: false };
+      try {
+        await upsertExam(finalExam);
+        succeeded.push(finalExam);
+      } catch (error) {
+        console.error("❌ Bulk save draft error:", draft.id, error);
+        failed.push({ exam: draft, error });
+      }
+    }
+
+    // 합격한 학생의 currentGrade 업데이트 (학생별 가장 최근 합격 심사 기준)
+    const latestPassedByStudent = new Map<string, Exam>();
+    for (const e of succeeded) {
+      if (!e.passed) continue;
+      const prev = latestPassedByStudent.get(e.studentId);
+      if (!prev || e.examDate > prev.examDate) {
+        latestPassedByStudent.set(e.studentId, e);
+      }
+    }
+
+    let nextStudents = [...students];
+    const gradeFailed: string[] = [];
+    for (const [studentId, exam] of Array.from(latestPassedByStudent.entries())) {
+      const student = nextStudents.find((s) => s.id === studentId);
+      if (!student) continue;
+      const updated = { ...student, currentGrade: exam.targetGrade };
+      try {
+        await upsertStudent(updated);
+        nextStudents = nextStudents.map((s) => (s.id === studentId ? updated : s));
+      } catch (error) {
+        console.error("❌ Bulk update grade error:", studentId, error);
+        gradeFailed.push(student.name);
+      }
+    }
+
+    setStudents(nextStudents);
+    if (selectedStudent) {
+      const refreshed = nextStudents.find((s) => s.id === selectedStudent.id);
+      setSelectedStudent({ ...(refreshed || selectedStudent) });
+    }
+    await refreshAllDrafts();
+    setBulkSavingDrafts(false);
+
+    let msg = `${succeeded.length}건의 심사가 최종 저장되었습니다.`;
+    if (latestPassedByStudent.size > 0) {
+      msg += `\n(합격 ${latestPassedByStudent.size - gradeFailed.length}명 급수 승급 반영)`;
+    }
+    if (failed.length > 0) {
+      msg += `\n\n⚠️ 저장 실패 ${failed.length}건: ` +
+        failed.map((f) => nameOf(f.exam.studentId)).join(", ") +
+        `\n다시 시도해 주세요.`;
+    }
+    if (gradeFailed.length > 0) {
+      msg += `\n\n⚠️ 급수 반영 실패: ${gradeFailed.join(", ")}`;
+    }
+    alert(msg);
   };
 
   const handleDeleteExam = async (id: string) => {
@@ -387,6 +494,7 @@ export default function AdminPage() {
         console.log("[삭제] UI 강제 업데이트");
         setSelectedStudent({ ...selectedStudent });
       }
+      refreshAllDrafts();
     } catch (error) {
       console.error("❌ Delete exam error:", error);
       alert("심사 삭제에 실패했습니다: " + String(error));
@@ -638,6 +746,20 @@ export default function AdminPage() {
                   {generatingCertificates
                     ? "상장 생성 중..."
                     : `승급 인증 상장 만들기 (${selectedForCertificate.size}명)`}
+                </button>
+              )}
+
+              {/* 임시저장본 일괄 저장 버튼 */}
+              {allDraftExams.length > 0 && (
+                <button
+                  onClick={handleBulkSaveDrafts}
+                  disabled={bulkSavingDrafts}
+                  className="w-full border-2 border-ink text-ink hover:bg-ink hover:text-paper font-semibold py-3 inline-flex items-center justify-center gap-2 transition disabled:opacity-50 mb-2"
+                >
+                  <Save size={16} />
+                  {bulkSavingDrafts
+                    ? "일괄 저장 중..."
+                    : `임시저장본 일괄 저장 (${new Set(allDraftExams.map((d) => d.studentId)).size}명 · ${allDraftExams.length}건)`}
                 </button>
               )}
 
